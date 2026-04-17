@@ -15,26 +15,26 @@
 //#pragma comment(lib, "d3d12.lib")
 //#pragma comment(lib, "dxgi.lib")
 
+// 出力ウィンドウに文字を出す
+void Log(const std::string& message) {
+	OutputDebugStringA((message + "\n").c_str());
+}
+
 void Log(std::ostream& os, const std::string& message) {
 	os << message << std::endl;
 	OutputDebugStringA((message + "\n").c_str());
 }
 
-// 出力ウィンドウに文字を出す
-//void Log(const std::string& message) {
-//	OutputDebugStringA(message.c_str());
-//}
-
 // 変数から型を推論してくれる
 //Log(std::format("enemyHp:{}, texturePath:{}\n", enemyHp, texturePath));
-
-// wstring->string
-//Log(ConvertString(std::format(L"WSTRING{}\n", wstringValue)));
-
+// 
 // string->wstring
 std::wstring ConvertString(const std::string& str);
 // wstring-.string
 std::string ConvertString(const std::wstring& str);
+
+// wstring->string
+//Log(ConvertString(std::format(L"WSTRING{}\n", wstringValue)));
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -98,6 +98,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	std::string str1{std::to_string(10)};
 
 	Log(logStream, "Program started");
+	Log(logStream, str0);
+	Log(logStream, str1);
+
 	logStream.flush();
 
 	WNDCLASS wc{};
