@@ -8,33 +8,15 @@
 // 時間を扱うライブラリ
 #include <chrono>
 #include "ConvertString.h"
+#include "log.h"
 
-//#include <d3d12.h>
-//#include <dxgi1_6.h>
-//#include <cassert>
-//#pragma comment(lib, "d3d12.lib")
-//#pragma comment(lib, "dxgi.lib")
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <cassert>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 
-// 出力ウィンドウに文字を出す
-void Log(const std::string& message) {
-	OutputDebugStringA((message + "\n").c_str());
-}
-
-void Log(std::ostream& os, const std::string& message) {
-	os << message << std::endl;
-	OutputDebugStringA((message + "\n").c_str());
-}
-
-// 変数から型を推論してくれる
-//Log(std::format("enemyHp:{}, texturePath:{}\n", enemyHp, texturePath));
-// 
-// string->wstring
-std::wstring ConvertString(const std::string& str);
-// wstring-.string
-std::string ConvertString(const std::wstring& str);
-
-// wstring->string
-//Log(ConvertString(std::format(L"WSTRING{}\n", wstringValue)));
+#pragma region ウィンドウプロシージャ
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -51,24 +33,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-// DXGIファクトリーの生成
-//IDXGIFactory7* dxgiFactory = nullptr;
-//HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-//assert(SUCCEEDED(hr));
-//
-//IDXGIAdapter4* useAdapter = nullptr;
-//
-//for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(i,
-//	DXGI_GPU_PREFERENCE_HIGH_PREFORMANCE, IID_PPV_ARGS(&useAdapter)) !=
-//	DXGI_ERROR_NOT_FOUND; ++i) {
-//
-//	DXGI_ADAPTER_DESC3 adapterDesc{};
-//	hr = useAdapter->GetDesc3(&adapterDesc);
-//	assert(SUCCEEDED(hr));
-//}
+#pragma endregion
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+
+#pragma region logs
 
 	// ログのディレクトリを用意
 	std::filesystem::create_directory("logs");
@@ -92,16 +62,72 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// 基本的な使い方
 	// 文字列を格納する
-	std::string str0{"STRING!!!"};
+	std::string str0{ "STRING!!!" };
 
 	// 整数を文字列にする
-	std::string str1{std::to_string(10)};
+	std::string str1{ std::to_string(10) };
 
 	Log(logStream, "Program started");
 	Log(logStream, str0);
 	Log(logStream, str1);
 
 	logStream.flush();
+
+#pragma endregion
+
+#pragma region DirectX12の初期化
+
+	// DXGIファクトリーの生成
+	IDXGIFactory7* dxgiFactory = nullptr;
+	// HRESULTはWindows系のエラーコードであり、
+	// 関数が聖子王したかどうかをSUCCEEDEDマクロで判定できる
+	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+	// 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どう
+	// にもできない場合が多いのでassertにしておく
+	assert(SUCCEEDED(hr));
+
+	// アダプタを決定する
+	IDXGIAdapter4* useAdapter = nullptr;
+	for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(i,
+		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) !=
+		DXGI_ERROR_NOT_FOUND; ++i) {
+
+		DXGI_ADAPTER_DESC3 adapterDesc{};
+		hr = useAdapter->GetDesc3(&adapterDesc);
+		assert(SUCCEEDED(hr));
+		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
+			std::string message = ConvertString(std::format(L"Use Adapter:{}\n", adapterDesc.Description));
+			Log(logStream, message);
+			break;
+		}
+		useAdapter->Release();
+		useAdapter = nullptr;
+	}
+	assert(useAdapter != nullptr);
+
+	// D3D12Deviceの生成
+	ID3D12Device* device = nullptr;
+	// 機能レベルとログ出力用の文字列
+	D3D_FEATURE_LEVEL featureLevels[] = {
+	D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
+	};
+	const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
+	// 高い順に生成できるか試していく
+	for (size_t i = 0; i < _countof(featureLevels); ++i) {
+		// 採用したアダプターでデバイスを生成
+		hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
+		// 指定した機能レベルでデバイスが生成できたかを確認
+		if (SUCCEEDED(hr)) {
+			// 生成できたのでログ出力を行ってループを抜ける
+			Log(std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
+			break;
+		}
+	}
+	// デバイスの生成がうまくいかなかったので起動できない
+	assert(device != nullptr);
+	Log("Complete create D3D12Device!!!\n");
+
+#pragma endregion
 
 	WNDCLASS wc{};
 	// ウィンドウプロシージャ
