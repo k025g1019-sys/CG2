@@ -80,7 +80,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// DXGIファクトリーの生成
 	IDXGIFactory7* dxgiFactory = nullptr;
 	// HRESULTはWindows系のエラーコードであり、
-	// 関数が聖子王したかどうかをSUCCEEDEDマクロで判定できる
+	// 関数が成功したかどうかをSUCCEEDEDマクロで判定できる
 	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
 	// 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どう
 	// にもできない場合が多いのでassertにしておく
