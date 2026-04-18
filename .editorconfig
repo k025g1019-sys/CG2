@@ -13,3 +13,6 @@ spelling_exclusion_path = ./exclusion.dic
 
 *.log
 /logs
+
+*.dmp
+Dumps/
