@@ -9,6 +9,8 @@
 #include <chrono>
 #include "ConvertString.h"
 #include "log.h"
+//#include "CrashHandle.h"
+#include <strsafe.h>
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -37,6 +39,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+
+	// 誰も補足しなかった場合に(Unhandled)、補足する関数を登録
+	//SetUnhandledExceptionFilter(ExportDump);
+
+	// 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下に出力
+	//SYSTEMTIME time;
+	//GetLocalTime(&time);
+	//wchar_t filePath[MAX_PATH] = { 0 };
+	//CreateDirectory(L"./Dumps", nullptr);
+	//StringCchPrintfW(filePath, MAX_PATH, L"./Dumps/%04d-%02d%02d-%02d%02d.dmp", time.wYear.time.wMonth, time.wDay, time.wHour, time.wMinute);
+	//HANDLE dumpFileHandle = CreateFile(filePath, GENERIC_READ | GENERIC_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
 
 #pragma region logs
 
