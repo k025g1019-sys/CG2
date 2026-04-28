@@ -1,4 +1,4 @@
-[*.{cpp,h}]
+[*.{cpp,h,hlsl,hlsli}]
 charset = utf-8
 # スペルミスをintellisense上での「エラー」として扱う
 spelling_error_severity = error
@@ -10,9 +10,13 @@ spelling_languages = en-us
 spelling_use_default_exclusion_dictionary = true
 # 自分の除外辞書を指定
 spelling_exclusion_path = ./exclusion.dic
+# (書式をK&Rスタイルにする)
+csharp_new_line_before_open_brace = none
 
 *.log
 /logs
 
 *.dmp
 Dumps/
+
+[*.{cpp,h}]
