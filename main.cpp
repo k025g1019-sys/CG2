@@ -1,17 +1,14 @@
-#include <Windows.h>
+#include <cassert>
 #include <cstdint>
 #include <string>
-#include <format>
-#include <filesystem> // ファイルに書いたり読んだりするライブラリ
+#include <vector>
 #include <fstream> // 時間を扱うライブラリ
+#include <filesystem> // ファイルに書いたり読んだりするライブラリ
 #include <chrono>
-#include "ConvertString.h"
-#include "log.h"
-#include "CrashHandle.h"
-#include "Matrix4x4.h"
+#include <format>
+#include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include <cassert>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #include <dxgidebug.h>
@@ -19,6 +16,11 @@
 #include <dxcapi.h>
 #pragma comment(lib, "dxcompiler.lib")
 #include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
+#include "ConvertString.h"
+#include "log.h"
+#include "CrashHandle.h"
+#include "Matrix4x4.h"
 
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
@@ -226,7 +228,7 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 		&heapProperties, // Heapの設定
 		D3D12_HEAP_FLAG_NONE,//Heapの特殊な設定。特になし。
 		&resourceDesc, // Resourceの設定
-		D3D12_RESOURCE_STATE_GENERIC_READ, // 初回のResourceState。Textureは基本読むだけ
+		D3D12_RESOURCE_STATE_COPY_DEST, // データ転送される設定
 		nullptr, // Clear最適値。使わないのでnullptr
 		IID_PPV_ARGS(&resource)); // 作成するResourceポインタへのポインタ
 	assert(SUCCEEDED(hr));
@@ -235,24 +237,24 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 #pragma endregion
 
 #pragma region TextureResourceにデータを転送する
-void UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages)
+[[ nodiscard]]
+ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages, ID3D12Device* device,ID3D12GraphicsCommandList* commandList)
 {
-	// Meta情報を取得
-	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-	// 全MipMapについて
-	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
-		// MipMapLevelを指定して各Imageを取得
-		const DirectX::Image *img = mipImages.GetImage(mipLevel, 0, 0);
-		// Textureに転送
-		HRESULT hr = texture->WriteToSubresource(
-			UINT(mipLevel),
-			nullptr,			  // 全領域へコピー
-			img->pixels,		  // 元データアドレス
-			UINT(img->rowPitch),  // 1ラインサイズ
-			UINT(img->slicePitch) // 1枚サイズ
-		);
-		assert(SUCCEEDED(hr));
-	}
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	DirectX::PrepareUpload(device, mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
+	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
+	ID3D12Resource* intermediateResource = CreateBufferResource(device, intermediateSize);
+	UpdateSubresources(commandList, texture, intermediateResource, 0, 0, UINT(subresources.size()), subresources.data());
+	// Textureへの転送後は利用できるよう、D3D12_RESOURCE_STATE_COPY_DESTからD3D12_RESOURCE_STATE_GENERIC_READへResourceStateを変更する
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = texture;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	commandList->ResourceBarrier(1, &barrier);
+	return intermediateResource;
 }
 #pragma endregion
 
@@ -270,7 +272,9 @@ struct Transform {
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// COMの初期化
-	CoInitializeEx(0, COINIT_MULTITHREADED);
+	HRESULT hr = S_OK;
+	hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+	assert(SUCCEEDED(hr));
 
 	// 誰も補足しなかった場合に(Unhandled)、補足する関数を登録
 	SetUnhandledExceptionFilter(ExportDump);
@@ -304,7 +308,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	IDXGIFactory7* dxgiFactory = nullptr;
 	// HRESULTはWindows系のエラーコードであり、
 	// 関数が成功したかどうかをSUCCEEDEDマクロで判定できる
-	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
 	// 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どう
 	// にもできない場合が多いのでassertにしておく
 	assert(SUCCEEDED(hr));
@@ -674,7 +678,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
-	UploadTextureData(textureResource, mipImages);
+	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages, device, commandList);
 
 #pragma region VertexResourceを生成する
 
@@ -716,7 +720,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//データを書き込む
 	Matrix4x4* wvpData = nullptr;
 	//書き込むためのアドレスを取得
-	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	hr = wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	assert(SUCCEEDED(hr));
 	//単位行列を書きこんでおく
 	*wvpData = MakeIdentity4x4();
 #pragma endregion
@@ -805,6 +810,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			DispatchMessage(&msg);
 		} else {
 
+#pragma region ImGui
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
@@ -826,9 +832,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			//ImGuiの内部コマンドを生成する
 			ImGui::Render();
 #endif
+#pragma endregion
 
+#pragma region ゲームの処理
 			// ゲームの処理
 			//transform.rotate.y += 0.03f;
+#pragma endregion
 
 			Matrix4x4 worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
@@ -869,7 +878,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 #pragma region コマンドを積む
 
 			commandList->RSSetViewports(1, &viewport); // Viewportを設定
-			commandList->RSSetScissorRects(1, &scissorRect); //Scirssorを設定
+			commandList->RSSetScissorRects(1, &scissorRect); //Scissorを設定
 			//RootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature);
 			commandList->SetPipelineState(graphicsPipelineState); // PSOを設定
@@ -946,6 +955,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 #pragma region 開放処理
 
+	intermediateResource->Release();
 	vertexResource->Release();
 	graphicsPipelineState->Release();
 	signatureBlob->Release();

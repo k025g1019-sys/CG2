@@ -132,3 +132,8 @@ hlsl
 Scirssor
 dxgi
 Descs
+hlsl
+subresources
+Descs
+dxgi
+Pathw
