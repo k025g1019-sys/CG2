@@ -1138,6 +1138,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 #pragma region 開放処理
 
+	includeHandler->Release();
+	dxcCompiler->Release();
+	dxcUtils->Release();
 	depthStencilResource->Release();
 	dsvDescriptorHeap->Release();
 	intermediateResource->Release();
