@@ -21,6 +21,8 @@
 #include "log.h"
 #include "CrashHandle.h"
 #include "Matrix4x4.h"
+#include "VertexData.h"
+#include "Sphere.h"
 
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
@@ -28,19 +30,6 @@
 #include "externals/imgui/imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM LParam);
 #endif
-
-struct Vector2 {
-	float x, y;
-};
-
-struct Vector4 {
-	float x, y, z, w;
-};
-
-struct VertexData {
-	Vector4 position;
-	Vector2 texcoord;
-};
 
 // クライアント領域のサイズ
 constexpr int32_t kClientWidth = 1280;
@@ -222,9 +211,7 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension); // Textureの次元数。普段使っているのは2次元
 	// 2. 利用するHeapの設定
 	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_CUSTOM; // 細かい設定を行う
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; // WriteBackポリシーでCPUアクセス可能
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 	// 3. Resourceを生成する
 	//Resourceの生成
 	ID3D12Resource* resource = nullptr;
@@ -745,6 +732,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
 	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages, device, commandList);
 
+	//Sphere sphere;
+	//sphere.Initialize(device, 16);
+
+
 #pragma region VertexResourceを生成する
 
 #pragma region 3D用VertexResourceを生成
@@ -973,22 +964,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 			ImGui::End();
 
-			ImGui::Begin("2D Objects");
-			if (ImGui::TreeNode("Square")) {
-				ImGui::PushID("Square");
-
-				ImGui::DragFloat3("scale", &transformSprite.scale.x, 0.01f);
-				ImGui::DragFloat3("rotate", &transformSprite.rotate.x, 0.05f);
-				ImGui::DragFloat3("translate", &transformSprite.translate.x, 0.35f);
-				ImGui::Separator();
-				ImGui::DragFloat4("Vertex0", &vertexDataSprite[0].position.x, 0.2f);
-				ImGui::DragFloat4("Vertex1", &vertexDataSprite[1].position.x, 0.2f);
-				ImGui::DragFloat4("Vertex2", &vertexDataSprite[2].position.x, 0.2f);
-
-				ImGui::PopID();
-				ImGui::TreePop();
-			}
-			ImGui::End();
+			//ImGui::Begin("2D Objects");
+			//if (ImGui::TreeNode("Square")) {
+			//	ImGui::PushID("Square");
+			//
+			//	ImGui::DragFloat3("scale", &transformSprite.scale.x, 0.01f);
+			//	ImGui::DragFloat3("rotate", &transformSprite.rotate.x, 0.05f);
+			//	ImGui::DragFloat3("translate", &transformSprite.translate.x, 0.35f);
+			//	ImGui::Separator();
+			//	ImGui::DragFloat4("Vertex0", &vertexDataSprite[0].position.x, 0.2f);
+			//	ImGui::DragFloat4("Vertex1", &vertexDataSprite[1].position.x, 0.2f);
+			//	ImGui::DragFloat4("Vertex2", &vertexDataSprite[2].position.x, 0.2f);
+			//
+			//	ImGui::PopID();
+			//	ImGui::TreePop();
+			//}
+			//ImGui::End();
 
 			//ImGuiの内部コマンドを生成する
 			ImGui::Render();
@@ -1071,15 +1062,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//描画！(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
 			commandList->DrawInstanced(6, 1, 0, 0);
+
+
+			//sphere.Draw(commandList);
+
+
 #pragma endregion
 
 #pragma region 2D描画
 			//Spriteの描画。変更が必要なものだけ変更する
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); // VBVを設定
-			// TransformationMatrixCBufferの場所を設定
-			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-			//描画！(DrawCall/ドローコール)
-			commandList->DrawInstanced(6, 1, 0, 0);
+			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); // VBVを設定
+			//// TransformationMatrixCBufferの場所を設定
+			//commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+			////描画！(DrawCall/ドローコール)
+			//commandList->DrawInstanced(6, 1, 0, 0);
 #pragma endregion
 
 #pragma endregion
@@ -1138,6 +1134,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 #pragma region 開放処理
 
+	includeHandler->Release();
+	dxcCompiler->Release();
+	dxcUtils->Release();
 	depthStencilResource->Release();
 	dsvDescriptorHeap->Release();
 	intermediateResource->Release();
