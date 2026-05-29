@@ -47,11 +47,11 @@ PixelShaderOutput main(VertexShaderOutput input)
             -normalize(gDirectionalLight.direction)
         );
 
-    float cos =
-        saturate(NdotL);
-    
     //float cos =
-    //saturate(pow(NdotL * 0.5f + 0.5f, 2.0f));
+    //    saturate(NdotL);
+    
+    float cos =
+    saturate(pow(NdotL * 0.5f + 0.5f, 2.0f));
     
     float4 diffuseLight =
         gDirectionalLight.color *
