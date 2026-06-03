@@ -1,46 +1,48 @@
 #include "DescriptorHeapManager.h"
 #include <cassert>
 
-using Microsoft::WRL::ComPtr;
-
-DescriptorHeapManager* DescriptorHeapManager::GetInstance() {
-    static DescriptorHeapManager instance;
-    return &instance;
-}
-
-void DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t numDescriptors) {
-    maxCount_ = numDescriptors;
+ID3D12DescriptorHeap* DescriptorHeapManager::CreateDescriptorHeap(
+    ID3D12Device* device,
+    D3D12_DESCRIPTOR_HEAP_TYPE heapType,
+    UINT numDescriptors,
+    bool shaderVisible
+) {
+    ID3D12DescriptorHeap* descriptorHeap = nullptr;
 
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
+    desc.Type = heapType;
     desc.NumDescriptors = numDescriptors;
-    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    desc.Flags =
+        shaderVisible
+        ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+        : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap_));
+    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
     assert(SUCCEEDED(hr));
 
-    descriptorSize_ =
-        device->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    return descriptorHeap;
 }
 
-uint32_t DescriptorHeapManager::Allocate() {
-    assert(currentIndex_ < maxCount_);
-    return currentIndex_++;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetCPU(uint32_t index) const {
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetCPUDescriptorHandle(
+    ID3D12DescriptorHeap* descriptorHeap,
+    uint32_t descriptorSize,
+    uint32_t index
+) {
     D3D12_CPU_DESCRIPTOR_HANDLE handle =
-        heap_->GetCPUDescriptorHandleForHeapStart();
+        descriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    handle.ptr += index * descriptorSize_;
+    handle.ptr += static_cast<SIZE_T>(descriptorSize) * index;
     return handle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetGPU(uint32_t index) const {
+D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetGPUDescriptorHandle(
+    ID3D12DescriptorHeap* descriptorHeap,
+    uint32_t descriptorSize,
+    uint32_t index
+) {
     D3D12_GPU_DESCRIPTOR_HANDLE handle =
-        heap_->GetGPUDescriptorHandleForHeapStart();
+        descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
-    handle.ptr += index * descriptorSize_;
+    handle.ptr += static_cast<UINT64>(descriptorSize) * index;
     return handle;
 }

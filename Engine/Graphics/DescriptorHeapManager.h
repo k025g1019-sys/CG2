@@ -1,30 +1,30 @@
 #pragma once
+
 #include <d3d12.h>
-#include <wrl.h>
 #include <cstdint>
 
 class DescriptorHeapManager {
 public:
-    static DescriptorHeapManager* GetInstance();
 
-    void Initialize(ID3D12Device* device, uint32_t numDescriptors);
+    // DescriptorHeap作成
+    static ID3D12DescriptorHeap* CreateDescriptorHeap(
+        ID3D12Device* device,
+        D3D12_DESCRIPTOR_HEAP_TYPE heapType,
+        UINT numDescriptors,
+        bool shaderVisible
+    );
 
-    uint32_t Allocate(); // indexを返す
+    // CPUハンドル取得
+    static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(
+        ID3D12DescriptorHeap* descriptorHeap,
+        uint32_t descriptorSize,
+        uint32_t index
+    );
 
-    D3D12_CPU_DESCRIPTOR_HANDLE GetCPU(uint32_t index) const;
-    D3D12_GPU_DESCRIPTOR_HANDLE GetGPU(uint32_t index) const;
-
-    ID3D12DescriptorHeap* GetHeap() const { return heap_.Get(); }
-
-    uint32_t GetDescriptorSize() const { return descriptorSize_; }
-
-private:
-    DescriptorHeapManager() = default;
-
-private:
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> heap_;
-
-    uint32_t descriptorSize_ = 0;
-    uint32_t currentIndex_ = 0;
-    uint32_t maxCount_ = 0;
+    // GPUハンドル取得
+    static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(
+        ID3D12DescriptorHeap* descriptorHeap,
+        uint32_t descriptorSize,
+        uint32_t index
+    );
 };

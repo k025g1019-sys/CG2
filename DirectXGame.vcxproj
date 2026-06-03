@@ -95,6 +95,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CreateBufferResource.cpp" />
+    <ClCompile Include="Engine\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Core\DirectXCore.cpp" />
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp" />
@@ -103,8 +104,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
     <ClCompile Include="Engine\ImGui\ImGuiManager.cpp" />
+    <ClCompile Include="Engine\Light\DirectionalLight.cpp" />
     <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
-    <ClCompile Include="Engine\Object\Camera.cpp" />
     <ClCompile Include="Engine\Object\Object3D.cpp" />
     <ClCompile Include="Engine\Object\Sprite.cpp" />
     <ClCompile Include="Engine\Utility\ConvertString.cpp" />
@@ -137,7 +138,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="Engine\Camera\Camera.h" />
     <ClInclude Include="Engine\Core\DirectXCore.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Geometry\GeometryGenerator.h" />
@@ -146,11 +147,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\TextureManager.h" />
     <ClInclude Include="Engine\ImGui\ImGuiManager.h" />
+    <ClInclude Include="Engine\Light\DirectionalLight.h" />
     <ClInclude Include="Engine\Math\Matrix4x4.h" />
     <ClInclude Include="Engine\Math\Vector2.h" />
     <ClInclude Include="Engine\Math\Vector3.h" />
     <ClInclude Include="Engine\Math\Vector4.h" />
-    <ClInclude Include="Engine\Object\Camera.h" />
     <ClInclude Include="Engine\Object\Object3D.h" />
     <ClInclude Include="Engine\Object\Sprite.h" />
     <ClInclude Include="Engine\Utility\ConvertString.h" />

@@ -1,4 +1,4 @@
-#include "Object3D.h"
+/*#include "Object3D.h"
 
 #include <cassert>
 #include <cstring>
@@ -121,3 +121,4 @@ void Object3D::Draw(
         0
     );
 }
+*/

@@ -52,6 +52,12 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{c8b488e8-8e7a-431c-b621-150121624416}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Camera">
+      <UniqueIdentifier>{87a7e538-42d5-4727-b3dd-b38a3efa1fb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\DirectionalLight">
+      <UniqueIdentifier>{92929079-810c-484f-86ec-055de56c2cad}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -83,9 +89,6 @@
     </ClCompile>
     <ClCompile Include="Engine\Utility\CrashHandle.cpp">
       <Filter>Engine\Utility</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Object\Camera.cpp">
-      <Filter>Engine\Object</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Object\Object3D.cpp">
       <Filter>Engine\Object</Filter>
@@ -129,6 +132,12 @@
     <ClCompile Include="CreateBufferResource.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Camera\Camera.cpp">
+      <Filter>Engine\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Light\DirectionalLight.cpp">
+      <Filter>Engine\DirectionalLight</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -166,9 +175,6 @@
     </ClInclude>
     <ClInclude Include="Engine\Utility\log.h">
       <Filter>Engine\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Object\Camera.h">
-      <Filter>Engine\Object</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Object\Object3D.h">
       <Filter>Engine\Object</Filter>
@@ -221,8 +227,11 @@
     <ClInclude Include="TransformationMatrix.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="DirectionalLight.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Engine\Camera\Camera.h">
+      <Filter>Engine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Light\DirectionalLight.h">
+      <Filter>Engine\DirectionalLight</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

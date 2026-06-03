@@ -1,42 +1,33 @@
 #pragma once
+
 #include <d3d12.h>
-#include <vector>
 #include <string>
+#include <vector>
 #include "externals/DirectXTex/DirectXTex.h"
+
+struct TextureData {
+    DirectX::ScratchImage mipImage;
+    DirectX::TexMetadata metadata;
+    ID3D12Resource* textureResource = nullptr;
+    ID3D12Resource* intermediateResource = nullptr;
+};
 
 class TextureManager {
 public:
-    static TextureManager* GetInstance();
+    static TextureData LoadTexture(const std::string& filepath);
 
-    void Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList);
+    static ID3D12Resource* CreateTextureResource(
+        ID3D12Device* device,
+        const DirectX::TexMetadata& metadata);
 
-    uint32_t LoadTexture(const std::string& path);
-
-    ID3D12Resource* GetResource(uint32_t index);
-    DirectX::TexMetadata GetMetadata(uint32_t index);
-    D3D12_GPU_DESCRIPTOR_HANDLE GetSRV(uint32_t index);
+    static ID3D12Resource* UploadTextureData(
+        ID3D12Resource* texture,
+        const DirectX::ScratchImage& mipImages,
+        ID3D12Device* device,
+        ID3D12GraphicsCommandList* commandList);
 
 private:
-    struct Texture {
-        DirectX::ScratchImage image;
-        DirectX::TexMetadata metadata{};
-        ID3D12Resource* resource = nullptr;
-        ID3D12Resource* upload = nullptr;
-
-        Texture() = default;
-
-        // コピー禁止
-        Texture(const Texture&) = delete;
-        Texture& operator=(const Texture&) = delete;
-
-        // move許可
-        Texture(Texture&&) = default;
-        Texture& operator=(Texture&&) = default;
-    };
-
-    std::vector<Texture> textures_;
-
-    ID3D12Device* device_ = nullptr;
-    ID3D12GraphicsCommandList* cmdList_ = nullptr;
-    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> srvHandlesGPU_;
+    static ID3D12Resource* CreateBufferResource(
+        ID3D12Device* device,
+        size_t sizeInBytes);
 };
