@@ -5,6 +5,7 @@ struct Material
     float4 color;
     int enableLighting;
     float3 padding;
+    float4x4 uvTransform;
 };
 
 cbuffer MaterialBuffer : register(b0)
@@ -29,9 +30,18 @@ PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
 
+    float4 transformedUV =
+        mul(
+            float4(input.texcoord, 0.0f, 1.0f),
+            material.uvTransform
+        );
+    
     float4 textureColor =
-        gTexture.Sample(gSampler, input.texcoord);
-
+        gTexture.Sample(
+            gSampler,
+            transformedUV.xy
+        );
+    
     if (material.enableLighting == 0)
     {
         output.color =
@@ -46,9 +56,6 @@ PixelShaderOutput main(VertexShaderOutput input)
             normalize(input.normal),
             -normalize(gDirectionalLight.direction)
         );
-
-    //float cos =
-    //    saturate(NdotL);
     
     float cos =
     saturate(pow(NdotL * 0.5f + 0.5f, 2.0f));

@@ -46,6 +46,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Engine/Graphics/DescriptorHeapManager.h"
 #include "Engine/Graphics/PipelineManager.h"
 
+//#include "LoadObjFile.h"
 
 
 
@@ -466,6 +467,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 白
 	materialData->color = { 1.0f,1.0f,1.0f,1.0f };
 	materialData->enableLighting = true;
+	materialData->uvTransform = MakeIdentity4x4();
 
 	uint32_t subdivision = 16;
 	uint32_t prevSubdivision = subdivision;
@@ -508,6 +510,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// 2Dスプライトでは無効にする
 	materialDataSprite->enableLighting = false;
+
+	materialDataSprite->uvTransform = MakeIdentity4x4();
 
 #pragma endregion
 
@@ -736,6 +740,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Transform3D transformSphere{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
 	Transform3D transformSprite { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
 
+	Transform3D uvTransformSprite{
+	{1.0f,1.0f,1.0f},
+	{0.0f,0.0f,0.0f},
+	{0.0f,0.0f,0.0f}
+	};
+
 	Transform3D cameraTransform { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -10.0f } };
 
 #pragma region ImGuiの初期化
@@ -881,6 +891,29 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			
 				ImGui::Separator();
 
+				ImGui::DragFloat2(
+					"UVTranslate",
+					&uvTransformSprite.translate.x,
+					0.01f,
+					-10.0f,
+					10.0f
+				);
+
+				ImGui::DragFloat2(
+					"UVScale",
+					&uvTransformSprite.scale.x,
+					0.01f,
+					-10.0f,
+					10.0f
+				);
+
+				ImGui::SliderAngle(
+					"UVRotate",
+					&uvTransformSprite.rotate.z
+				);
+
+				ImGui::Separator();
+
 				bool lightingSprite =
 					materialDataSprite->enableLighting != 0;
 				if (ImGui::Checkbox("Enable Lighting", &lightingSprite)) {
@@ -972,8 +1005,32 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			transformationMatrixDataSprite->WVP =
 				worldViewProjectionMatrixSprite;
 
-			transformationMatrixDataSprite->World =
-				worldMatrixSprite;
+			transformationMatrixDataSprite->World = worldMatrixSprite;
+
+			Matrix4x4 uvTransformMatrix =
+				MakeScaleMatrix(
+				uvTransformSprite.scale
+				);
+
+			uvTransformMatrix =
+				Multiply(
+				uvTransformMatrix,
+				MakeRotateZMatrix(
+				uvTransformSprite.rotate.z
+				)
+				);
+
+			uvTransformMatrix =
+				Multiply(
+				uvTransformMatrix,
+				MakeTranslateMatrix(
+				uvTransformSprite.translate
+				)
+				);
+
+			materialDataSprite->uvTransform =
+				uvTransformMatrix;
+
 #pragma endregion
 
 			DirectXCore::GetInstance()->BeginFrame();
