@@ -15,7 +15,7 @@ public:
 
     void Finalize();
 
-    IDxcBlob* Compile(
+    Microsoft::WRL::ComPtr<IDxcBlob> Compile(
         const std::wstring& filePath,
         const wchar_t* profile
     );
@@ -32,9 +32,9 @@ private:
 
 private:
 
-    IDxcUtils* dxcUtils_ = nullptr;
+    Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_;
 
-    IDxcCompiler3* dxcCompiler_ = nullptr;
+    Microsoft::WRL::ComPtr<IDxcCompiler3> dxcCompiler_;
 
-    IDxcIncludeHandler* includeHandler_ = nullptr;
+    Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler_;
 };

@@ -6,6 +6,7 @@
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <wrl.h>
 
 class DirectXCore {
 public:
@@ -25,19 +26,19 @@ public:
 public:
 
     ID3D12Device* GetDevice() const {
-        return device_;
+        return device_.Get();
     }
 
     ID3D12GraphicsCommandList* GetCommandList() const {
-        return commandList_;
+        return commandList_.Get();
     }
 
     ID3D12CommandQueue* GetCommandQueue() const {
-        return commandQueue_;
+        return commandQueue_.Get();
     }
 
     IDXGISwapChain4* GetSwapChain() const {
-        return swapChain_;
+        return swapChain_.Get();
     }
 
     static uint32_t GetSwapChainBufferCount() {
@@ -49,11 +50,11 @@ public:
 public:
 
     ID3D12DescriptorHeap* GetSRVDescriptorHeap() const {
-        return srvDescriptorHeap_;
+        return srvDescriptorHeap_.Get();
     }
 
     ID3D12DescriptorHeap* GetDSVDescriptorHeap() const {
-        return dsvDescriptorHeap_;
+        return dsvDescriptorHeap_.Get();
     }
 
     D3D12_VIEWPORT GetViewport() const { return viewport_; }
@@ -86,35 +87,35 @@ private:
 
 private:
 
-    IDXGIFactory7* dxgiFactory_ = nullptr;
+    Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
 
-    IDXGIAdapter4* useAdapter_ = nullptr;
+    Microsoft::WRL::ComPtr<IDXGIAdapter4> useAdapter_;
 
-    ID3D12Device* device_ = nullptr;
-
-private:
-
-    ID3D12CommandQueue* commandQueue_ = nullptr;
-
-    ID3D12CommandAllocator* commandAllocator_ = nullptr;
-
-    ID3D12GraphicsCommandList* commandList_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Device> device_;
 
 private:
 
-    IDXGISwapChain4* swapChain_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
+
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator_;
+
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
 
 private:
 
-    ID3D12DescriptorHeap* rtvDescriptorHeap_ = nullptr;
+    Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
 
-    ID3D12DescriptorHeap* srvDescriptorHeap_ = nullptr;
+private:
 
-    ID3D12DescriptorHeap* dsvDescriptorHeap_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
+
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap_;
+
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_;
 
     static const uint32_t kSwapChainBufferCount = 2;
 
-    ID3D12Resource* swapChainResources_[kSwapChainBufferCount] = {};
+    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources_[kSwapChainBufferCount];
 
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[kSwapChainBufferCount];
 
@@ -122,7 +123,7 @@ private:
 
 private:
 
-    ID3D12Fence* fence_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
 
     HANDLE fenceEvent_ = nullptr;
 

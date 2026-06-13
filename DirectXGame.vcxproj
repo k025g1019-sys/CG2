@@ -55,7 +55,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\ImGui;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Object;$(ProjectDir)Engine\Utility;$(ProjectDir)Game\GameObject;$(ProjectDir)Game\Scene;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -83,7 +83,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\ImGui;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Object;$(ProjectDir)Engine\Utility;$(ProjectDir)Game\GameObject;$(ProjectDir)Game\Scene;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -94,22 +94,20 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CreateBufferResource.cpp" />
-    <ClCompile Include="Engine\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Core\DirectXCore.cpp" />
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp" />
+    <ClCompile Include="Engine\Geometry\LoadObjFile.cpp" />
     <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp" />
+    <ClCompile Include="Engine\Graphics\GpuResource.cpp" />
     <ClCompile Include="Engine\Graphics\PipelineManager.cpp" />
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
-    <ClCompile Include="Engine\ImGui\ImGuiManager.cpp" />
-    <ClCompile Include="Engine\Light\DirectionalLight.cpp" />
     <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
-    <ClCompile Include="Engine\Object\Object3D.cpp" />
-    <ClCompile Include="Engine\Object\Sprite.cpp" />
+    <ClCompile Include="Engine\Rendering\RenderResource.cpp" />
     <ClCompile Include="Engine\Utility\ConvertString.cpp" />
     <ClCompile Include="Engine\Utility\CrashHandle.cpp" />
+    <ClCompile Include="Engine\Utility\Log.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -133,29 +131,29 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="functions.cpp" />
-    <ClCompile Include="Game\GameObject\Sphere.cpp" />
-    <ClCompile Include="LoadObjFile.cpp" />
-    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="Game\Scene\GameScene.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Camera\Camera.h" />
     <ClInclude Include="Engine\Core\DirectXCore.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Geometry\GeometryGenerator.h" />
+    <ClInclude Include="Engine\Geometry\LoadObjFile.h" />
     <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h" />
+    <ClInclude Include="Engine\Graphics\GpuResource.h" />
     <ClInclude Include="Engine\Graphics\PipelineManager.h" />
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\TextureManager.h" />
-    <ClInclude Include="Engine\ImGui\ImGuiManager.h" />
     <ClInclude Include="Engine\Light\DirectionalLight.h" />
     <ClInclude Include="Engine\Math\Matrix4x4.h" />
     <ClInclude Include="Engine\Math\Vector2.h" />
     <ClInclude Include="Engine\Math\Vector3.h" />
     <ClInclude Include="Engine\Math\Vector4.h" />
-    <ClInclude Include="Engine\Object\Object3D.h" />
-    <ClInclude Include="Engine\Object\Sprite.h" />
+    <ClInclude Include="Engine\Rendering\Material.h" />
+    <ClInclude Include="Engine\Rendering\RenderResource.h" />
+    <ClInclude Include="Engine\Rendering\TransformData3D.h" />
+    <ClInclude Include="Engine\Rendering\TransformationMatrix.h" />
+    <ClInclude Include="Engine\Rendering\VertexData.h" />
     <ClInclude Include="Engine\Utility\ConvertString.h" />
     <ClInclude Include="Engine\Utility\CrashHandle.h" />
     <ClInclude Include="Engine\Utility\log.h" />
@@ -172,12 +170,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="functions.h" />
-    <ClInclude Include="Game\GameObject\Sphere.h" />
-    <ClInclude Include="LoadObjFile.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="TransformationMatrix.h" />
-    <ClInclude Include="VertexData.h" />
+    <ClInclude Include="Game\Scene\GameScene.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

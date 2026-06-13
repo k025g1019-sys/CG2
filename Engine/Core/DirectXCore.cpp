@@ -7,6 +7,8 @@
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 
+using Microsoft::WRL::ComPtr;
+
 DirectXCore* DirectXCore::GetInstance() {
 
     static DirectXCore instance;
@@ -49,7 +51,7 @@ void DirectXCore::InitializeDXGIDevice() {
 
 #ifdef _DEBUG
 
-    ID3D12Debug1* debugController = nullptr;
+    ComPtr<ID3D12Debug1> debugController;
 
     if (SUCCEEDED(D3D12GetDebugInterface(
         IID_PPV_ARGS(&debugController)))) {
@@ -88,9 +90,7 @@ void DirectXCore::InitializeDXGIDevice() {
             break;
         }
 
-        useAdapter_->Release();
-
-        useAdapter_ = nullptr;
+        useAdapter_.Reset();
     }
 
     assert(useAdapter_ != nullptr);
@@ -104,7 +104,7 @@ void DirectXCore::InitializeDXGIDevice() {
     for (size_t i = 0; i < _countof(featureLevels); ++i) {
 
         hr = D3D12CreateDevice(
-            useAdapter_,
+            useAdapter_.Get(),
             featureLevels[i],
             IID_PPV_ARGS(&device_)
         );
@@ -141,7 +141,7 @@ void DirectXCore::InitializeCommand() {
     hr = device_->CreateCommandList(
         0,
         D3D12_COMMAND_LIST_TYPE_DIRECT,
-        commandAllocator_,
+        commandAllocator_.Get(),
         nullptr,
         IID_PPV_ARGS(&commandList_)
     );
@@ -174,14 +174,21 @@ void DirectXCore::InitializeSwapChain(
     swapChainDesc.SwapEffect =
         DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
+    ComPtr<IDXGISwapChain1> swapChain1;
+
     HRESULT hr = dxgiFactory_->CreateSwapChainForHwnd(
-        commandQueue_,
+        commandQueue_.Get(),
         hwnd,
         &swapChainDesc,
         nullptr,
         nullptr,
-        reinterpret_cast<IDXGISwapChain1**>(&swapChain_)
+        &swapChain1
     );
+
+    assert(SUCCEEDED(hr));
+
+    // IDXGISwapChain4へ変換して保持する
+    hr = swapChain1.As(&swapChain_);
 
     assert(SUCCEEDED(hr));
 }
@@ -265,7 +272,7 @@ void DirectXCore::InitializeRenderTarget() {
             D3D12_RTV_DIMENSION_TEXTURE2D;
 
         device_->CreateRenderTargetView(
-            swapChainResources_[i],
+            swapChainResources_[i].Get(),
             &rtvDesc,
             rtvHandles_[i]
         );
@@ -303,7 +310,7 @@ void DirectXCore::BeginFrame() {
         D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 
     barrier.Transition.pResource =
-        swapChainResources_[backBufferIndex];
+        swapChainResources_[backBufferIndex].Get();
 
     barrier.Transition.StateBefore =
         D3D12_RESOURCE_STATE_PRESENT;
@@ -355,7 +362,7 @@ void DirectXCore::WaitForGPU() {
 
     ++fenceValue_;
 
-    commandQueue_->Signal(fence_, fenceValue_);
+    commandQueue_->Signal(fence_.Get(), fenceValue_);
 
     if (fence_->GetCompletedValue() < fenceValue_) {
 
@@ -382,7 +389,7 @@ void DirectXCore::EndFrame() {
         D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 
     barrier.Transition.pResource =
-        swapChainResources_[backBufferIndex];
+        swapChainResources_[backBufferIndex].Get();
 
     barrier.Transition.StateBefore =
         D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -397,7 +404,7 @@ void DirectXCore::EndFrame() {
     assert(SUCCEEDED(hr));
 
     ID3D12CommandList* commandLists[] = {
-        commandList_
+        commandList_.Get()
     };
 
     commandQueue_->ExecuteCommandLists(
@@ -410,7 +417,7 @@ void DirectXCore::EndFrame() {
     ++fenceValue_;
 
     commandQueue_->Signal(
-        fence_,
+        fence_.Get(),
         fenceValue_
     );
 
@@ -432,7 +439,7 @@ void DirectXCore::EndFrame() {
     assert(SUCCEEDED(hr));
 
     hr = commandList_->Reset(
-        commandAllocator_,
+        commandAllocator_.Get(),
         nullptr
     );
 
@@ -443,32 +450,33 @@ void DirectXCore::Finalize() {
 
     CloseHandle(fenceEvent_);
 
-    fence_->Release();
+    // 各リソースはComPtrにより自動開放されるが、
+    // リソースリークチェック前に確実に解放するため明示的にResetする。
+    fence_.Reset();
 
-    for (uint32_t i = 0; i < kSwapChainBufferCount; ++i) {
-
-        swapChainResources_[i]->Release();
+    for (auto& resource : swapChainResources_) {
+        resource.Reset();
     }
 
-    srvDescriptorHeap_->Release();
+    srvDescriptorHeap_.Reset();
 
-    dsvDescriptorHeap_->Release();
+    dsvDescriptorHeap_.Reset();
 
-    rtvDescriptorHeap_->Release();
+    rtvDescriptorHeap_.Reset();
 
-    swapChain_->Release();
+    swapChain_.Reset();
 
-    commandList_->Release();
+    commandList_.Reset();
 
-    commandAllocator_->Release();
+    commandAllocator_.Reset();
 
-    commandQueue_->Release();
+    commandQueue_.Reset();
 
-    device_->Release();
+    device_.Reset();
 
-    useAdapter_->Release();
+    useAdapter_.Reset();
 
-    dxgiFactory_->Release();
+    dxgiFactory_.Reset();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE

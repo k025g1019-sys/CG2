@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ソース ファイル">
@@ -28,13 +28,13 @@
     <Filter Include="Engine\Graphics">
       <UniqueIdentifier>{916f2433-c48f-483e-aecf-9097d697db77}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\ImGui">
-      <UniqueIdentifier>{c4cc3a39-c7fb-4670-80e8-b5a0e4254631}</UniqueIdentifier>
+    <Filter Include="Engine\Light">
+      <UniqueIdentifier>{92929079-810c-484f-86ec-055de56c2cad}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Math">
       <UniqueIdentifier>{e77abfb1-4f23-4f2b-8451-135569cd3fcb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Object">
+    <Filter Include="Engine\Rendering">
       <UniqueIdentifier>{00276162-2f6f-4552-acfe-de4c0df07565}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Utility">
@@ -43,20 +43,11 @@
     <Filter Include="Game">
       <UniqueIdentifier>{a5f2df8f-4c0d-464e-9617-5b19a9b6c47f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Game\GameObject">
-      <UniqueIdentifier>{34a8d8a6-9aff-4bed-805b-723b5b145114}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Game\Scene">
       <UniqueIdentifier>{ac187808-13ac-417a-86cc-5e744f52bfe8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{c8b488e8-8e7a-431c-b621-150121624416}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Camera">
-      <UniqueIdentifier>{87a7e538-42d5-4727-b3dd-b38a3efa1fb3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\DirectionalLight">
-      <UniqueIdentifier>{92929079-810c-484f-86ec-055de56c2cad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -84,25 +75,22 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Utility\ConvertString.cpp">
-      <Filter>Engine\Utility</Filter>
+    <ClCompile Include="Engine\Core\DirectXCore.cpp">
+      <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Utility\CrashHandle.cpp">
-      <Filter>Engine\Utility</Filter>
+    <ClCompile Include="Engine\Core\WinApp.cpp">
+      <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Object\Object3D.cpp">
-      <Filter>Engine\Object</Filter>
+    <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp">
+      <Filter>Engine\Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Object\Sprite.cpp">
-      <Filter>Engine\Object</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Math\Matrix4x4.cpp">
-      <Filter>Engine\Math</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\ImGui\ImGuiManager.cpp">
-      <Filter>Engine\ImGui</Filter>
+    <ClCompile Include="Engine\Geometry\LoadObjFile.cpp">
+      <Filter>Engine\Geometry</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp">
+      <Filter>Engine\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\GpuResource.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\PipelineManager.cpp">
@@ -114,35 +102,23 @@
     <ClCompile Include="Engine\Graphics\TextureManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp">
-      <Filter>Engine\Geometry</Filter>
+    <ClCompile Include="Engine\Math\Matrix4x4.cpp">
+      <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\DirectXCore.cpp">
-      <Filter>Engine\Core</Filter>
+    <ClCompile Include="Engine\Rendering\RenderResource.cpp">
+      <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\WinApp.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\GameObject\Sphere.cpp">
-      <Filter>Game\GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="Log.cpp">
+    <ClCompile Include="Engine\Utility\ConvertString.cpp">
       <Filter>Engine\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="CreateBufferResource.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Engine\Utility\CrashHandle.cpp">
+      <Filter>Engine\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Camera\Camera.cpp">
-      <Filter>Engine\Camera</Filter>
+    <ClCompile Include="Engine\Utility\Log.cpp">
+      <Filter>Engine\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Light\DirectionalLight.cpp">
-      <Filter>Engine\DirectionalLight</Filter>
-    </ClCompile>
-    <ClCompile Include="LoadObjFile.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="functions.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Game\Scene\GameScene.cpp">
+      <Filter>Game\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -170,23 +146,35 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="VertexData.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Engine\Core\DirectXCore.h">
+      <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\ConvertString.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\Core\WinApp.h">
+      <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\CrashHandle.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\Geometry\GeometryGenerator.h">
+      <Filter>Engine\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\log.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\Geometry\LoadObjFile.h">
+      <Filter>Engine\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Object\Object3D.h">
-      <Filter>Engine\Object</Filter>
+    <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h">
+      <Filter>Engine\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Object\Sprite.h">
-      <Filter>Engine\Object</Filter>
+    <ClInclude Include="Engine\Graphics\GpuResource.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\PipelineManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\TextureManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Light\DirectionalLight.h">
+      <Filter>Engine\Light</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Math\Matrix4x4.h">
       <Filter>Engine\Math</Filter>
@@ -200,50 +188,32 @@
     <ClInclude Include="Engine\Math\Vector4.h">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\ImGui\ImGuiManager.h">
-      <Filter>Engine\ImGui</Filter>
+    <ClInclude Include="Engine\Rendering\Material.h">
+      <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Rendering\RenderResource.h">
+      <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\PipelineManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Rendering\TransformData3D.h">
+      <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Rendering\TransformationMatrix.h">
+      <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\TextureManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Rendering\VertexData.h">
+      <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Geometry\GeometryGenerator.h">
-      <Filter>Engine\Geometry</Filter>
+    <ClInclude Include="Engine\Utility\ConvertString.h">
+      <Filter>Engine\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\DirectXCore.h">
-      <Filter>Engine\Core</Filter>
+    <ClInclude Include="Engine\Utility\CrashHandle.h">
+      <Filter>Engine\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\WinApp.h">
-      <Filter>Engine\Core</Filter>
+    <ClInclude Include="Engine\Utility\log.h">
+      <Filter>Engine\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Game\GameObject\Sphere.h">
-      <Filter>Game\GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="TransformationMatrix.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Camera\Camera.h">
-      <Filter>Engine\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Light\DirectionalLight.h">
-      <Filter>Engine\DirectionalLight</Filter>
-    </ClInclude>
-    <ClInclude Include="LoadObjFile.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="functions.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Game\Scene\GameScene.h">
+      <Filter>Game\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

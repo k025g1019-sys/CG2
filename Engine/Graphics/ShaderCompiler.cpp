@@ -9,6 +9,8 @@
 
 #pragma comment(lib, "dxcompiler.lib")
 
+using Microsoft::WRL::ComPtr;
+
 ShaderCompiler* ShaderCompiler::GetInstance() {
 
     static ShaderCompiler instance;
@@ -41,7 +43,7 @@ void ShaderCompiler::Initialize() {
     assert(SUCCEEDED(hr));
 }
 
-IDxcBlob* ShaderCompiler::Compile(
+ComPtr<IDxcBlob> ShaderCompiler::Compile(
     const std::wstring& filePath,
     const wchar_t* profile
 ) {
@@ -56,7 +58,7 @@ IDxcBlob* ShaderCompiler::Compile(
 
     HRESULT hr;
 
-    IDxcBlobEncoding* shaderSource = nullptr;
+    ComPtr<IDxcBlobEncoding> shaderSource;
 
     hr = dxcUtils_->LoadFile(
         filePath.c_str(),
@@ -86,19 +88,19 @@ IDxcBlob* ShaderCompiler::Compile(
         L"-Zpr",
     };
 
-    IDxcResult* shaderResult = nullptr;
+    ComPtr<IDxcResult> shaderResult;
 
     hr = dxcCompiler_->Compile(
         &shaderSourceBuffer,
         arguments,
         _countof(arguments),
-        includeHandler_,
+        includeHandler_.Get(),
         IID_PPV_ARGS(&shaderResult)
     );
 
     assert(SUCCEEDED(hr));
 
-    IDxcBlobUtf8* shaderError = nullptr;
+    ComPtr<IDxcBlobUtf8> shaderError;
 
     shaderResult->GetOutput(
         DXC_OUT_ERRORS,
@@ -114,7 +116,7 @@ IDxcBlob* ShaderCompiler::Compile(
         assert(false);
     }
 
-    IDxcBlob* shaderBlob = nullptr;
+    ComPtr<IDxcBlob> shaderBlob;
 
     hr = shaderResult->GetOutput(
         DXC_OUT_OBJECT,
@@ -132,17 +134,14 @@ IDxcBlob* ShaderCompiler::Compile(
     )
     ));
 
-    shaderSource->Release();
-    shaderResult->Release();
-
     return shaderBlob;
 }
 
 void ShaderCompiler::Finalize() {
 
-    includeHandler_->Release();
+    includeHandler_.Reset();
 
-    dxcCompiler_->Release();
+    dxcCompiler_.Reset();
 
-    dxcUtils_->Release();
+    dxcUtils_.Reset();
 }

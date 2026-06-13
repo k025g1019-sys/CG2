@@ -2,36 +2,24 @@
 #include <cassert>
 #include <wrl.h>
 #include "ConvertString.h"
+#include "GpuResource.h"
 #include "externals/DirectXTex/d3dx12.h"
 
 using namespace DirectX;
+using Microsoft::WRL::ComPtr;
 
-ID3D12Resource* TextureManager::CreateBufferResource(
+TextureData TextureManager::LoadAndUpload(
+    const std::string& filepath,
     ID3D12Device* device,
-    size_t sizeInBytes) {
-    D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-    D3D12_RESOURCE_DESC desc{};
-    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    desc.Width = sizeInBytes;
-    desc.Height = 1;
-    desc.DepthOrArraySize = 1;
-    desc.MipLevels = 1;
-    desc.SampleDesc.Count = 1;
-    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-    ID3D12Resource* resource = nullptr;
-    HRESULT hr = device->CreateCommittedResource(
-        &uploadHeapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &desc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&resource));
-
-    assert(SUCCEEDED(hr));
-    return resource;
+    ID3D12GraphicsCommandList* commandList) {
+    TextureData texture = LoadTexture(filepath);
+    texture.textureResource = CreateTextureResource(device, texture.metadata);
+    texture.intermediateResource = UploadTextureData(
+        texture.textureResource.Get(),
+        texture.mipImage,
+        device,
+        commandList);
+    return texture;
 }
 
 TextureData TextureManager::LoadTexture(const std::string& filepath) {
@@ -60,7 +48,7 @@ TextureData TextureManager::LoadTexture(const std::string& filepath) {
     return data;
 }
 
-ID3D12Resource* TextureManager::CreateTextureResource(
+ComPtr<ID3D12Resource> TextureManager::CreateTextureResource(
     ID3D12Device* device,
     const DirectX::TexMetadata& metadata) {
     D3D12_RESOURCE_DESC desc{};
@@ -75,7 +63,7 @@ ID3D12Resource* TextureManager::CreateTextureResource(
     D3D12_HEAP_PROPERTIES heap{};
     heap.Type = D3D12_HEAP_TYPE_DEFAULT;
 
-    ID3D12Resource* resource = nullptr;
+    ComPtr<ID3D12Resource> resource;
 
     HRESULT hr = device->CreateCommittedResource(
         &heap,
@@ -89,7 +77,7 @@ ID3D12Resource* TextureManager::CreateTextureResource(
     return resource;
 }
 
-ID3D12Resource* TextureManager::UploadTextureData(
+ComPtr<ID3D12Resource> TextureManager::UploadTextureData(
     ID3D12Resource* texture,
     const DirectX::ScratchImage& mipImages,
     ID3D12Device* device,
@@ -106,13 +94,13 @@ ID3D12Resource* TextureManager::UploadTextureData(
     uint64_t intermediateSize =
         GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
 
-    ID3D12Resource* intermediateResource =
+    ComPtr<ID3D12Resource> intermediateResource =
         CreateBufferResource(device, intermediateSize);
 
     UpdateSubresources(
         commandList,
         texture,
-        intermediateResource,
+        intermediateResource.Get(),
         0, 0,
         UINT(subresources.size()),
         subresources.data());
