@@ -31,6 +31,9 @@
     <Filter Include="Engine\Graphics">
       <UniqueIdentifier>{916f2433-c48f-483e-aecf-9097d697db77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Input">
+      <UniqueIdentifier>{7a3c9f1e-5b8d-4e26-9c4a-1f0b6d83e572}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine\Light">
       <UniqueIdentifier>{92929079-810c-484f-86ec-055de56c2cad}</UniqueIdentifier>
     </Filter>
@@ -108,6 +111,9 @@
     <ClCompile Include="Engine\Graphics\TextureManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Input\Input.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Math\Matrix4x4.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
@@ -181,6 +187,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Graphics\TextureManager.h">
       <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\Input.h">
+      <Filter>Engine\Input</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Light\DirectionalLight.h">
       <Filter>Engine\Light</Filter>

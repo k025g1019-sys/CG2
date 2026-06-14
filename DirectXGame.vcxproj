@@ -104,6 +104,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Graphics\PipelineManager.cpp" />
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
+    <ClCompile Include="Engine\Input\Input.cpp" />
     <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
     <ClCompile Include="Engine\Rendering\RenderResource.cpp" />
     <ClCompile Include="Engine\Utility\ConvertString.cpp" />
@@ -146,6 +147,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Graphics\PipelineManager.h" />
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\TextureManager.h" />
+    <ClInclude Include="Engine\Input\Input.h" />
     <ClInclude Include="Engine\Light\DirectionalLight.h" />
     <ClInclude Include="Engine\Math\Matrix4x4.h" />
     <ClInclude Include="Engine\Math\Vector2.h" />

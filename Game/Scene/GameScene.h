@@ -84,5 +84,4 @@ private:
     // --- サウンド ---
     size_t soundHandle_ = 0;     // Alarm01.wavのハンドル
     float soundVolume_ = 1.0f;   // ImGuiで調整する音量
-    bool prevEnterKey_ = false;  // Enterキーのエッジ検出用（前フレームの押下状態）
 };

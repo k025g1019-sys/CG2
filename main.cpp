@@ -35,6 +35,7 @@
 #include "Engine/Graphics/PipelineManager.h"
 #include "Engine/Graphics/GpuResource.h"
 #include "Engine/Audio/Audio.h"
+#include "Engine/Input/Input.h"
 
 #include "Game/Scene/GameScene.h"
 
@@ -76,6 +77,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// サウンド初期化（XAudio2）
 	Audio::GetInstance()->Initialize();
+
+	// 入力初期化（DirectInput）
+	Input::GetInstance()->Initialize(winApp->GetHwnd());
 
 	// よく使うDirectXオブジェクトを取得
 	ID3D12GraphicsCommandList* commandList = DirectXCore::GetInstance()->GetCommandList();
@@ -187,6 +191,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::Render();
 #endif
 
+			// 入力状態を更新（全キーを取得し、前フレームと比較できるようにする）
+			Input::GetInstance()->Update();
+
 			scene.Update();
 
 			DirectXCore::GetInstance()->BeginFrame();
@@ -210,6 +217,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// --- 終了処理（各リソースは上のスコープでComPtrにより解放済み）---
 	Audio::GetInstance()->Finalize();
+	Input::GetInstance()->Finalize();
 	ShaderCompiler::GetInstance()->Finalize();
 	DirectXCore::GetInstance()->Finalize();
 

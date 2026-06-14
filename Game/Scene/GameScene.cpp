@@ -8,6 +8,7 @@
 #include "Engine/Geometry/GeometryGenerator.h"
 #include "Engine/Light/DirectionalLight.h"
 #include "Engine/Audio/Audio.h"
+#include "Engine/Input/Input.h"
 #include "Matrix4x4.h"
 #include "VertexData.h"
 #include "Material.h"
@@ -109,12 +110,10 @@ void GameScene::Initialize(ID3D12Device* device) {
 }
 
 void GameScene::Update() {
-	// Enterキーを押した瞬間にサウンド再生（押しっぱなしで連続再生しないようエッジ検出）
-	bool enterKey = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
-	if (enterKey && !prevEnterKey_) {
+	// Enterキーを押した瞬間にサウンド再生（エッジ検出はInputが担当。DIK_RETURNを他のキーに変えれば任意キーに対応）
+	if (Input::GetInstance()->IsTrigger(DIK_RETURN)) {
 		Audio::GetInstance()->Play(soundHandle_);
 	}
-	prevEnterKey_ = enterKey;
 
 	// ゲームの処理
 	transformTriangle_.rotate.y += 0.04f;
