@@ -19,6 +19,9 @@
     <Filter Include="Engine">
       <UniqueIdentifier>{025b8ffa-70c9-4acc-8b4a-e003b2714a3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Audio">
+      <UniqueIdentifier>{b7e3d9a2-4c1f-4e8a-9d6b-2f3a8c5e1d40}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine\Core">
       <UniqueIdentifier>{8fc22809-bfdc-4eb0-a7eb-8896933d610f}</UniqueIdentifier>
     </Filter>
@@ -74,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Audio\Audio.cpp">
+      <Filter>Engine\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\DirectXCore.cpp">
       <Filter>Engine\Core</Filter>
@@ -145,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Audio\Audio.h">
+      <Filter>Engine\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\DirectXCore.h">
       <Filter>Engine\Core</Filter>

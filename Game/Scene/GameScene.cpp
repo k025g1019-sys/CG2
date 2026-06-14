@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GpuResource.h"
 #include "Engine/Geometry/GeometryGenerator.h"
 #include "Engine/Light/DirectionalLight.h"
+#include "Engine/Audio/Audio.h"
 #include "Matrix4x4.h"
 #include "VertexData.h"
 #include "Material.h"
@@ -101,9 +102,20 @@ void GameScene::Initialize(ID3D12Device* device) {
 
 	// --- 平行光源 ---
 	light_ = CreateDirectionalLight(device);
+
+	// --- サウンド読み込み ---
+	soundHandle_ = Audio::GetInstance()->LoadWave("resources/Alarm01.wav");
+	Audio::GetInstance()->SetVolume(soundHandle_, soundVolume_);
 }
 
 void GameScene::Update() {
+	// Enterキーを押した瞬間にサウンド再生（押しっぱなしで連続再生しないようエッジ検出）
+	bool enterKey = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
+	if (enterKey && !prevEnterKey_) {
+		Audio::GetInstance()->Play(soundHandle_);
+	}
+	prevEnterKey_ = enterKey;
+
 	// ゲームの処理
 	transformTriangle_.rotate.y += 0.04f;
 	transformSphere_.rotate.y += 0.02f;
@@ -269,6 +281,20 @@ void GameScene::DrawImGui(ID3D12Device* device) {
 	ImGui::ColorEdit4("Light Color", &light_.data->color.x);
 	ImGui::DragFloat3("Light Direction", &light_.data->direction.x, 0.01f);
 	ImGui::DragFloat("Intensity", &light_.data->intensity, 0.01f, 0.0f, 10.0f);
+
+	ImGui::End();
+
+	ImGui::Begin("Sound");
+
+	// ボタンでもEnterキーでも再生できる（再生中は頭から鳴らし直す）
+	if (ImGui::Button("Play (Alarm01)")) {
+		Audio::GetInstance()->Play(soundHandle_);
+	}
+
+	// 音量を増減する
+	if (ImGui::SliderFloat("Volume", &soundVolume_, 0.0f, 1.0f)) {
+		Audio::GetInstance()->SetVolume(soundHandle_, soundVolume_);
+	}
 
 	ImGui::End();
 }

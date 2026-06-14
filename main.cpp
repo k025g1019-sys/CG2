@@ -34,6 +34,7 @@
 #include "Engine/Graphics/DescriptorHeapManager.h"
 #include "Engine/Graphics/PipelineManager.h"
 #include "Engine/Graphics/GpuResource.h"
+#include "Engine/Audio/Audio.h"
 
 #include "Game/Scene/GameScene.h"
 
@@ -72,6 +73,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// シェーダコンパイラ初期化
 	ShaderCompiler::GetInstance()->Initialize();
+
+	// サウンド初期化（XAudio2）
+	Audio::GetInstance()->Initialize();
 
 	// よく使うDirectXオブジェクトを取得
 	ID3D12GraphicsCommandList* commandList = DirectXCore::GetInstance()->GetCommandList();
@@ -205,6 +209,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	// --- 終了処理（各リソースは上のスコープでComPtrにより解放済み）---
+	Audio::GetInstance()->Finalize();
 	ShaderCompiler::GetInstance()->Finalize();
 	DirectXCore::GetInstance()->Finalize();
 
