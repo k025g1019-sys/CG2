@@ -22,6 +22,9 @@
     <Filter Include="Engine\Audio">
       <UniqueIdentifier>{b7e3d9a2-4c1f-4e8a-9d6b-2f3a8c5e1d40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Camera">
+      <UniqueIdentifier>{b2d8c4e1-3a7f-4d92-9e1b-6c5a2f8d4e10}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine\Core">
       <UniqueIdentifier>{8fc22809-bfdc-4eb0-a7eb-8896933d610f}</UniqueIdentifier>
     </Filter>
@@ -83,6 +86,9 @@
     </ClCompile>
     <ClCompile Include="Engine\Audio\Audio.cpp">
       <Filter>Engine\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Camera\DebugCamera.cpp">
+      <Filter>Engine\Camera</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\DirectXCore.cpp">
       <Filter>Engine\Core</Filter>
@@ -160,6 +166,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Audio\Audio.h">
       <Filter>Engine\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Camera\DebugCamera.h">
+      <Filter>Engine\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\DirectXCore.h">
       <Filter>Engine\Core</Filter>

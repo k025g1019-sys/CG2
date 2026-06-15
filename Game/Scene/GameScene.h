@@ -8,6 +8,11 @@
 #include "TransformData3D.h"
 #include "LoadObjFile.h"
 #include "RenderResource.h"
+// デバッグカメラはDebugビルド限定。このプロジェクトはReleaseでも_DEBUGが定義される
+// （RuntimeLibrary=MultiThreadedDebug）ため、Release判定にはNDEBUGを使う。
+#ifndef NDEBUG
+#include "Engine/Camera/DebugCamera.h"
+#endif
 
 struct VertexData;
 
@@ -84,4 +89,17 @@ private:
     // --- サウンド ---
     size_t soundHandle_ = 0;     // Alarm01.wavのハンドル
     float soundVolume_ = 1.0f;   // ImGuiで調整する音量
+
+    // --- スプライト描画のオン/オフ（ImGuiで切り替え） ---
+    bool drawSprite_ = true;
+
+#ifndef NDEBUG
+    // --- デバッグカメラ（Debugビルドのみ。Releaseでは無効）---
+    DebugCamera debugCamera_;
+    // ピッキング用のローカル空間バウンディング球（Initializeで頂点から算出。球は半径1のユニット球）
+    Vector3 localCenterTriangle_{ 0.0f, 0.0f, 0.0f };
+    float localRadiusTriangle_ = 0.0f;
+    Vector3 localCenterObj_{ 0.0f, 0.0f, 0.0f };
+    float localRadiusObj_ = 0.0f;
+#endif
 };

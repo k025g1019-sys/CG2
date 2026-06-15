@@ -1,6 +1,8 @@
 #include "GameScene.h"
 
+#include <cmath>
 #include <cstring>
+#include <vector>
 
 #include "Engine/Core/WinApp.h"
 #include "Engine/Core/DirectXCore.h"
@@ -17,6 +19,46 @@
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
 #endif
+
+namespace {
+#ifndef NDEBUG
+// 頂点群からローカル空間のバウンディング球（中心と半径）をAABB経由で求める（デバッグカメラのピッキング用）
+void ComputeLocalBoundingSphere(const VertexData* vertices, size_t count, Vector3& outCenter, float& outRadius) {
+	if (count == 0) {
+		outCenter = { 0.0f, 0.0f, 0.0f };
+		outRadius = 0.0f;
+		return;
+	}
+	Vector3 minPos = { vertices[0].position.x, vertices[0].position.y, vertices[0].position.z };
+	Vector3 maxPos = minPos;
+	// std::min/maxはWindows.hのmin/maxマクロと衝突するため、比較で求める
+	for (size_t i = 1; i < count; ++i) {
+		float px = vertices[i].position.x;
+		float py = vertices[i].position.y;
+		float pz = vertices[i].position.z;
+		if (px < minPos.x) { minPos.x = px; }
+		if (py < minPos.y) { minPos.y = py; }
+		if (pz < minPos.z) { minPos.z = pz; }
+		if (px > maxPos.x) { maxPos.x = px; }
+		if (py > maxPos.y) { maxPos.y = py; }
+		if (pz > maxPos.z) { maxPos.z = pz; }
+	}
+	outCenter = { (minPos.x + maxPos.x) * 0.5f, (minPos.y + maxPos.y) * 0.5f, (minPos.z + maxPos.z) * 0.5f };
+	// 中心から最も遠い頂点までの距離を半径にする
+	float radiusSq = 0.0f;
+	for (size_t i = 0; i < count; ++i) {
+		float dx = vertices[i].position.x - outCenter.x;
+		float dy = vertices[i].position.y - outCenter.y;
+		float dz = vertices[i].position.z - outCenter.z;
+		float distSq = dx * dx + dy * dy + dz * dz;
+		if (distSq > radiusSq) {
+			radiusSq = distSq;
+		}
+	}
+	outRadius = std::sqrt(radiusSq);
+}
+#endif  // !NDEBUG
+}  // namespace
 
 void GameScene::Initialize(ID3D12Device* device) {
 	// --- 三角形の頂点リソース ---
@@ -42,6 +84,10 @@ void GameScene::Initialize(ID3D12Device* device) {
 	for (int i = 0; i < 6; ++i) {
 		vertexDataTriangle_[i].normal = { 0.0f, 0.0f, -1.0f };
 	}
+#ifndef NDEBUG
+	// ピッキング用のバウンディング球を頂点から算出（デバッグカメラ用）
+	ComputeLocalBoundingSphere(vertexDataTriangle_, 6, localCenterTriangle_, localRadiusTriangle_);
+#endif
 
 	// --- OBJモデル読み込み ---
 	modelData_ = LoadObjFile("resources", "axis.obj");
@@ -52,6 +98,10 @@ void GameScene::Initialize(ID3D12Device* device) {
 	VertexData* objVertices = nullptr;
 	vertexResourceObj_->Map(0, nullptr, reinterpret_cast<void**>(&objVertices));
 	std::memcpy(objVertices, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+#ifndef NDEBUG
+	// ピッキング用のバウンディング球を頂点から算出（デバッグカメラ用）
+	ComputeLocalBoundingSphere(modelData_.vertices.data(), modelData_.vertices.size(), localCenterObj_, localRadiusObj_);
+#endif
 
 	// --- 三角形・OBJ共通の3Dマテリアル ---
 	material_ = CreateMaterialResource(device, true);
@@ -110,8 +160,8 @@ void GameScene::Initialize(ID3D12Device* device) {
 }
 
 void GameScene::Update() {
-	// Enterキーを押した瞬間にサウンド再生（エッジ検出はInputが担当。DIK_RETURNを他のキーに変えれば任意キーに対応）
-	if (Input::GetInstance()->IsTrigger(DIK_RETURN)) {
+	// スペースキーを押した瞬間にサウンド再生（Enterはデバッグカメラの有効・無効切り替えに割り当て）
+	if (Input::GetInstance()->IsTrigger(DIK_SPACE)) {
 		Audio::GetInstance()->Play(soundHandle_);
 	}
 
@@ -122,10 +172,42 @@ void GameScene::Update() {
 	const float width = float(WinApp::kClientWidth);
 	const float height = float(WinApp::kClientHeight);
 
-	// ビュー・透視投影
+	// 透視投影
 	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, width / height, 0.1f, 100.0f);
+
+	// 通常カメラのビュー行列
 	Matrix4x4 cameraMatrix = MakeAffineMatrix(cameraTransform_.scale, cameraTransform_.rotate, cameraTransform_.translate);
 	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+
+#ifndef NDEBUG
+	// --- デバッグカメラ更新（Debugビルドのみ。Releaseでは丸ごと除外される）---
+	// ピッキング対象（ワールド空間のバウンディング球）を毎フレーム組み立てる
+	std::vector<DebugCamera::PickTarget> pickTargets;
+	auto addPickTarget = [&pickTargets](const Transform3D& transform, const Vector3& localCenter, float localRadius) {
+		Matrix4x4 world = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+		Vector3 center = Transform(localCenter, world);
+		// 拡大率の最大成分で半径をスケールする（std::maxはWindows.hのマクロと衝突するため比較で求める）
+		float maxScale = std::fabs(transform.scale.x);
+		if (std::fabs(transform.scale.y) > maxScale) { maxScale = std::fabs(transform.scale.y); }
+		if (std::fabs(transform.scale.z) > maxScale) { maxScale = std::fabs(transform.scale.z); }
+		pickTargets.push_back({ center, localRadius * maxScale });
+	};
+	addPickTarget(transformTriangle_, localCenterTriangle_, localRadiusTriangle_);
+	addPickTarget(transformSphere_, { 0.0f, 0.0f, 0.0f }, 1.0f);  // 球は半径1のユニット球
+	addPickTarget(transformObj_, localCenterObj_, localRadiusObj_);
+
+	// ImGuiがマウスを使用中はデバッグカメラのマウス操作を無視する
+	bool blockMouse = false;
+#ifdef USE_IMGUI
+	blockMouse = ImGui::GetIO().WantCaptureMouse;
+#endif
+	debugCamera_.Update(pickTargets, width, height, projectionMatrix, blockMouse);
+
+	// デバッグカメラ有効時は通常カメラのビューを上書きする
+	if (debugCamera_.IsEnabled()) {
+		viewMatrix = debugCamera_.GetViewMatrix();
+	}
+#endif  // !NDEBUG
 
 	UpdateTransformMatrix(triangleTransform_, transformTriangle_, viewMatrix, projectionMatrix);
 	UpdateTransformMatrix(sphereTransform_, transformSphere_, viewMatrix, projectionMatrix);
@@ -235,6 +317,9 @@ void GameScene::DrawImGui(ID3D12Device* device) {
 	if (ImGui::TreeNode("Square")) {
 		ImGui::PushID("Square");
 
+		ImGui::Checkbox("Draw Sprite", &drawSprite_);
+		ImGui::Separator();
+
 		ImGui::DragFloat3("scale", &transformSprite_.scale.x, 0.01f);
 		ImGui::DragFloat3("rotate", &transformSprite_.rotate.x, 0.05f);
 		ImGui::DragFloat3("translate", &transformSprite_.translate.x, 0.35f);
@@ -283,9 +368,14 @@ void GameScene::DrawImGui(ID3D12Device* device) {
 
 	ImGui::End();
 
+#ifndef NDEBUG
+	// デバッグカメラの状態表示・調整（Debugビルドのみ）
+	debugCamera_.DrawImGui();
+#endif
+
 	ImGui::Begin("Sound");
 
-	// ボタンでもEnterキーでも再生できる（再生中は頭から鳴らし直す）
+	// ボタンでもSpaceキーでも再生できる（再生中は頭から鳴らし直す）
 	if (ImGui::Button("Play (Alarm01)")) {
 		Audio::GetInstance()->Play(soundHandle_);
 	}
@@ -340,12 +430,14 @@ void GameScene::Draw(
 		objTransform_.resource.Get(),
 		UINT(modelData_.vertices.size()));
 
-	// --- スプライト描画（インデックス6個でクアッド）---
-	commandList->SetGraphicsRootDescriptorTable(3, textureHandles[spriteTextureIndex_]);
-	commandList->IASetVertexBuffers(0, 1, &vbvSprite_);
-	commandList->IASetIndexBuffer(&ibvSprite_);
-	commandList->SetGraphicsRootConstantBufferView(0, spriteMaterial_.resource->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootConstantBufferView(1, spriteTransform_.resource->GetGPUVirtualAddress());
-	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	// --- スプライト描画（インデックス6個でクアッド。drawSprite_がfalseなら描かない）---
+	if (drawSprite_) {
+		commandList->SetGraphicsRootDescriptorTable(3, textureHandles[spriteTextureIndex_]);
+		commandList->IASetVertexBuffers(0, 1, &vbvSprite_);
+		commandList->IASetIndexBuffer(&ibvSprite_);
+		commandList->SetGraphicsRootConstantBufferView(0, spriteMaterial_.resource->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(1, spriteTransform_.resource->GetGPUVirtualAddress());
+		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	}
 }
 
