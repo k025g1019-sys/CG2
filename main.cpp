@@ -139,7 +139,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// --- テクスチャを読み込んでGPUへ転送 ---
 		std::vector<std::string> texturePaths = {
 			"resources/uvChecker.png",
-			"resources/monsterBall.png"
+			"resources/monsterBall.png",
+			"resources/sky_sphere.png"
 		};
 		std::vector<TextureData> textures(texturePaths.size());
 		std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandleGPU(textures.size());
@@ -149,7 +150,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// --- シーン初期化 ---
 		GameScene scene;
-		scene.Initialize(device);
+		scene.Initialize(device, rootSignature.Get(), vertexShaderBlob.Get(), pixelShaderBlob.Get());
 
 #ifdef USE_IMGUI
 		// --- ImGui初期化（SRVヒープのindex0を使用）---

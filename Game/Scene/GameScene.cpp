@@ -60,7 +60,11 @@ void ComputeLocalBoundingSphere(const VertexData* vertices, size_t count, Vector
 #endif  // !NDEBUG
 }  // namespace
 
-void GameScene::Initialize(ID3D12Device* device) {
+void GameScene::Initialize(
+	ID3D12Device* device,
+	ID3D12RootSignature* rootSignature,
+	IDxcBlob* vertexShader,
+	IDxcBlob* pixelShader) {
 	// --- 三角形の頂点リソース ---
 	vertexResourceTriangle_ = CreateBufferResource(device, sizeof(VertexData) * 6);
 	vbvTriangle_.BufferLocation = vertexResourceTriangle_->GetGPUVirtualAddress();
@@ -157,6 +161,9 @@ void GameScene::Initialize(ID3D12Device* device) {
 	// --- サウンド読み込み ---
 	soundHandle_ = Audio::GetInstance()->LoadWave("resources/Alarm01.wav");
 	Audio::GetInstance()->SetVolume(soundHandle_, soundVolume_);
+
+	// --- 天球（背景。ライティング無効・カリング無効の専用PSO）---
+	skydome_.Initialize(device, rootSignature, vertexShader, pixelShader);
 }
 
 void GameScene::Update() {
@@ -212,6 +219,9 @@ void GameScene::Update() {
 	UpdateTransformMatrix(triangleTransform_, transformTriangle_, viewMatrix, projectionMatrix);
 	UpdateTransformMatrix(sphereTransform_, transformSphere_, viewMatrix, projectionMatrix);
 	UpdateTransformMatrix(objTransform_, transformObj_, viewMatrix, projectionMatrix);
+
+	// 天球（カメラ追従ON時は中心がカメラ位置へ追従する）
+	skydome_.Update(viewMatrix, projectionMatrix);
 
 	// スプライト（正射影）
 	Matrix4x4 worldMatrixSprite = MakeAffineMatrix(transformSprite_.scale, transformSprite_.rotate, transformSprite_.translate);
@@ -311,6 +321,9 @@ void GameScene::DrawImGui(ID3D12Device* device) {
 		ImGui::TreePop();
 	}
 
+	// ----Skydome----
+	skydome_.DrawImGui();
+
 	ImGui::End();
 
 	ImGui::Begin("2D Objects");
@@ -398,9 +411,14 @@ void GameScene::Draw(
 
 	// --- 共通設定（Viewport/Scissor/RenderTargetはDirectXCore::BeginFrameで設定済み）---
 	commandList->SetGraphicsRootSignature(rootSignature);
-	commandList->SetPipelineState(pipelineState);
 	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap };
 	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+	// --- 天球を最初に描画（背景。専用PSO=カリング無効に切り替わる）---
+	skydome_.Draw(commandList, rootSignature, textureHandles[skydomeTextureIndex_], light_.resource.Get());
+
+	// --- 以降は標準PSO（裏面カリング）で描画 ---
+	commandList->SetPipelineState(pipelineState);
 	// マテリアルと平行光源のCBufferを設定
 	commandList->SetGraphicsRootConstantBufferView(0, material_.resource->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootConstantBufferView(2, light_.resource->GetGPUVirtualAddress());

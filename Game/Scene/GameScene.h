@@ -3,11 +3,13 @@
 #include <d3d12.h>
 #include <cstddef>
 #include <cstdint>
+#include <dxcapi.h>
 #include <wrl.h>
 
 #include "TransformData3D.h"
 #include "LoadObjFile.h"
 #include "RenderResource.h"
+#include "Engine/Object/Skydome.h"
 // デバッグカメラはDebugビルド限定。このプロジェクトはReleaseでも_DEBUGが定義される
 // （RuntimeLibrary=MultiThreadedDebug）ため、Release判定にはNDEBUGを使う。
 #ifndef NDEBUG
@@ -19,7 +21,12 @@ struct VertexData;
 // デモ用シーン。三角形・球・OBJ・スプライトと開発用ImGuiを保持する。
 class GameScene {
 public:
-    void Initialize(ID3D12Device* device);
+    // device:リソース生成 / rootSignature・各シェーダー:天球の専用PSO生成に使用
+    void Initialize(
+        ID3D12Device* device,
+        ID3D12RootSignature* rootSignature,
+        IDxcBlob* vertexShader,
+        IDxcBlob* pixelShader);
 
     // UI操作を反映した行列計算と定数バッファ更新
     void Update();
@@ -47,6 +54,9 @@ private:
     ModelData modelData_;
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceObj_;
     D3D12_VERTEX_BUFFER_VIEW vbvObj_{};
+
+    // --- 天球（背景）---
+    Skydome skydome_;
 
     // --- 球 ---
     uint32_t subdivision_ = 16;
@@ -85,6 +95,7 @@ private:
     uint32_t sphereTextureIndex_ = 1;
     uint32_t objTextureIndex_ = 0;
     uint32_t spriteTextureIndex_ = 0;
+    uint32_t skydomeTextureIndex_ = 2;  // textureHandles[2] = sky_sphere.png
 
     // --- サウンド ---
     size_t soundHandle_ = 0;     // Alarm01.wavのハンドル

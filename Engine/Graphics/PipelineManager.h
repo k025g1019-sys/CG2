@@ -27,10 +27,12 @@ public:
     // (b0:Material[PS], b0:Transform[VS], b1:Light[PS], t0:Texture[PS], s0:Sampler)
     static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* device);
 
-    // このプロジェクト標準のInputLayout/各種Stateで描画パイプラインを生成する
+    // このプロジェクト標準のInputLayout/各種Stateで描画パイプラインを生成する。
+    // cullModeで裏面カリングの挙動を変えられる（天球は内側から見るためNONEを指定する）。
     static Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateStandardPipeline(
         ID3D12Device* device,
         ID3D12RootSignature* rootSignature,
         IDxcBlob* vertexShader,
-        IDxcBlob* pixelShader);
+        IDxcBlob* pixelShader,
+        D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK);
 };

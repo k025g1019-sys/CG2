@@ -111,7 +111,8 @@ ComPtr<ID3D12PipelineState> PipelineManager::CreateStandardPipeline(
     ID3D12Device* device,
     ID3D12RootSignature* rootSignature,
     IDxcBlob* vertexShader,
-    IDxcBlob* pixelShader) {
+    IDxcBlob* pixelShader,
+    D3D12_CULL_MODE cullMode) {
     // InputLayout（POSITION / TEXCOORD / NORMAL）
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
     inputElementDescs[0].SemanticName = "POSITION";
@@ -135,9 +136,9 @@ ComPtr<ID3D12PipelineState> PipelineManager::CreateStandardPipeline(
     D3D12_BLEND_DESC blendDesc{};
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-    // RasterizerState（裏面カリング, 塗りつぶし）
+    // RasterizerState（カリング(既定は裏面), 塗りつぶし）
     D3D12_RASTERIZER_DESC rasterizerDesc{};
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+    rasterizerDesc.CullMode = cullMode;
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
     // DepthStencilState（深度有効, 書き込み, LessEqual）
