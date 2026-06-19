@@ -85,7 +85,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ID3D12GraphicsCommandList* commandList = DirectXCore::GetInstance()->GetCommandList();
 	ID3D12Device* device = DirectXCore::GetInstance()->GetDevice();
 	ID3D12DescriptorHeap* srvDescriptorHeap = DirectXCore::GetInstance()->GetSRVDescriptorHeap();
-	ID3D12DescriptorHeap* dsvDescriptorHeap = DirectXCore::GetInstance()->GetDSVDescriptorHeap();
 
 	Log("Complete create D3D12Device!!!\n");
 
@@ -115,15 +114,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// リソースを保持するComPtrはこのスコープを抜けると自動開放される。
 	// （リソースリークチェックより前に解放させるため、明示的にスコープで囲む）
 	{
-		// --- 深度バッファ（DepthStencil）を作る ---
-		ComPtr<ID3D12Resource> depthStencilResource = CreateDepthStencilTextureResource(
-			device, WinApp::kClientWidth, WinApp::kClientHeight);
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-		dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		device->CreateDepthStencilView(
-			depthStencilResource.Get(), &dsvDesc,
-			dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		// 深度バッファ（DepthStencil）はDirectXCoreが生成・所有し、リサイズ時に作り直す
 
 		// --- RootSignatureとPSOを作る ---
 		ComPtr<ID3D12RootSignature> rootSignature = PipelineManager::CreateRootSignature(device);
@@ -184,6 +175,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// --- メインループ（ウィンドウの×ボタンが押されるまで）---
 		while (winApp->ProcessMessage()) {
+			// ウィンドウサイズが変わっていたら、スワップチェーン・深度バッファ・ビューポートを作り直す
+			if (winApp->IsSizeChanged()) {
+				DirectXCore::GetInstance()->Resize(
+					winApp->GetClientWidth(), winApp->GetClientHeight());
+				winApp->ClearSizeChangedFlag();
+			}
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();

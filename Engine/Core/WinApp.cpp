@@ -20,6 +20,21 @@ LRESULT CALLBACK WinApp::WindowProc(
 
     switch (msg) {
 
+    case WM_SIZE:
+    // 最小化時はサイズが0になるため無視する
+    if (wparam != SIZE_MINIMIZED) {
+        int32_t width = LOWORD(lparam);
+        int32_t height = HIWORD(lparam);
+        WinApp* app = GetInstance();
+        // 実際にサイズが変わったときだけフラグを立てる
+        if (width != app->clientWidth_ || height != app->clientHeight_) {
+            app->clientWidth_ = width;
+            app->clientHeight_ = height;
+            app->sizeChanged_ = true;
+        }
+    }
+    break;
+
     case WM_DESTROY:
     PostQuitMessage(0);
     return 0;

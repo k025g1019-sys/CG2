@@ -4,6 +4,8 @@
 
 #include <d3d12sdklayers.h>
 
+#include "Engine/Graphics/GpuResource.h"
+
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 
@@ -32,19 +34,11 @@ void DirectXCore::Initialize(
 
     InitializeRenderTarget();
 
+    InitializeDepthStencil(width, height);
+
     InitializeFence();
 
-    viewport_.Width = static_cast<float>(width);
-    viewport_.Height = static_cast<float>(height);
-    viewport_.TopLeftX = 0.0f;
-    viewport_.TopLeftY = 0.0f;
-    viewport_.MinDepth = 0.0f;
-    viewport_.MaxDepth = 1.0f;
-
-    scissorRect_.left = 0;
-    scissorRect_.right = width;
-    scissorRect_.top = 0;
-    scissorRect_.bottom = height;
+    UpdateViewportAndScissor(width, height);
 }
 
 void DirectXCore::InitializeDXGIDevice() {
@@ -248,9 +242,14 @@ void DirectXCore::InitializeRenderTarget() {
         D3D12_DESCRIPTOR_HEAP_TYPE_RTV
         );
 
+    CreateSwapChainRenderTargets();
+}
+
+void DirectXCore::CreateSwapChainRenderTargets() {
+
     for (uint32_t i = 0; i < kSwapChainBufferCount; ++i) {
 
-        hr = swapChain_->GetBuffer(
+        HRESULT hr = swapChain_->GetBuffer(
             i,
             IID_PPV_ARGS(&swapChainResources_[i])
         );
@@ -279,6 +278,39 @@ void DirectXCore::InitializeRenderTarget() {
     }
 }
 
+void DirectXCore::InitializeDepthStencil(int32_t width, int32_t height) {
+
+    depthStencilResource_ =
+        CreateDepthStencilTextureResource(device_.Get(), width, height);
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+
+    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+    device_->CreateDepthStencilView(
+        depthStencilResource_.Get(),
+        &dsvDesc,
+        dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart()
+    );
+}
+
+void DirectXCore::UpdateViewportAndScissor(int32_t width, int32_t height) {
+
+    viewport_.Width = static_cast<float>(width);
+    viewport_.Height = static_cast<float>(height);
+    viewport_.TopLeftX = 0.0f;
+    viewport_.TopLeftY = 0.0f;
+    viewport_.MinDepth = 0.0f;
+    viewport_.MaxDepth = 1.0f;
+
+    scissorRect_.left = 0;
+    scissorRect_.right = width;
+    scissorRect_.top = 0;
+    scissorRect_.bottom = height;
+}
+
 void DirectXCore::InitializeFence() {
 
     HRESULT hr = device_->CreateFence(
@@ -297,6 +329,46 @@ void DirectXCore::InitializeFence() {
     );
 
     assert(fenceEvent_ != nullptr);
+}
+
+void DirectXCore::Resize(int32_t width, int32_t height) {
+
+    // 初期化前、または最小化などで0サイズになった場合は何もしない
+    if (!swapChain_ || width <= 0 || height <= 0) {
+        return;
+    }
+
+    // 既に同じサイズなら作り直し不要
+    if (width == scissorRect_.right && height == scissorRect_.bottom) {
+        return;
+    }
+
+    // 古いバッファを参照したままのGPU処理が無いように完了を待つ
+    WaitForGPU();
+
+    // ResizeBuffersの前に、既存のバックバッファと深度バッファの参照を解放する
+    for (auto& resource : swapChainResources_) {
+        resource.Reset();
+    }
+    depthStencilResource_.Reset();
+
+    // スワップチェーンのバッファをウィンドウサイズに合わせて作り直す
+    HRESULT hr = swapChain_->ResizeBuffers(
+        kSwapChainBufferCount,
+        static_cast<UINT>(width),
+        static_cast<UINT>(height),
+        DXGI_FORMAT_R8G8B8A8_UNORM,
+        0
+    );
+
+    assert(SUCCEEDED(hr));
+
+    // RTV・深度バッファ・ビューポートを新しいサイズで作り直す
+    CreateSwapChainRenderTargets();
+
+    InitializeDepthStencil(width, height);
+
+    UpdateViewportAndScissor(width, height);
 }
 
 void DirectXCore::BeginFrame() {
@@ -457,6 +529,8 @@ void DirectXCore::Finalize() {
     for (auto& resource : swapChainResources_) {
         resource.Reset();
     }
+
+    depthStencilResource_.Reset();
 
     srvDescriptorHeap_.Reset();
 

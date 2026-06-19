@@ -15,8 +15,13 @@ public:
 
     bool ProcessMessage();
 
-    int32_t GetClientWidth() const { return kClientWidth; }
-    int32_t GetClientHeight() const { return kClientHeight; }
+    int32_t GetClientWidth() const { return clientWidth_; }
+    int32_t GetClientHeight() const { return clientHeight_; }
+
+    // 直近のフレームでウィンドウサイズが変化したか
+    bool IsSizeChanged() const { return sizeChanged_; }
+    // サイズ変化フラグを下ろす（リサイズ処理後に呼ぶ）
+    void ClearSizeChangedFlag() { sizeChanged_ = false; }
 
     HWND GetHwnd() const {
         return hwnd_;
@@ -32,6 +37,12 @@ private:
 private:
     HWND hwnd_ = nullptr;
     WNDCLASS wc_{};
+
+    // 現在のクライアント領域サイズ（WM_SIZEで更新される）
+    int32_t clientWidth_ = kClientWidth;
+    int32_t clientHeight_ = kClientHeight;
+    // サイズが変化したフレームでtrueになる
+    bool sizeChanged_ = false;
 
 private:
     static LRESULT CALLBACK WindowProc(

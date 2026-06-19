@@ -15,6 +15,9 @@ public:
 
     void Initialize(HWND hwnd, int32_t width, int32_t height);
 
+    // ウィンドウサイズ変更に追従して、スワップチェーンや深度バッファ等を作り直す
+    void Resize(int32_t width, int32_t height);
+
     void BeginFrame();
 
     void WaitForGPU();
@@ -83,7 +86,16 @@ private:
 
     void InitializeRenderTarget();
 
+    // スワップチェーンの各バッファに対するRTVを生成する（リサイズ時の作り直しにも使う）
+    void CreateSwapChainRenderTargets();
+
+    // 深度バッファ（DepthStencil）リソースとDSVを生成する
+    void InitializeDepthStencil(int32_t width, int32_t height);
+
     void InitializeFence();
+
+    // ビューポートとシザー矩形を指定サイズへ更新する
+    void UpdateViewportAndScissor(int32_t width, int32_t height);
 
 private:
 
@@ -120,6 +132,9 @@ private:
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[kSwapChainBufferCount];
 
     uint32_t descriptorSizeRTV_ = 0;
+
+    // 深度バッファ本体（DSVはdsvDescriptorHeap_の先頭に作成する）
+    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
 
 private:
 

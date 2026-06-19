@@ -176,8 +176,9 @@ void GameScene::Update() {
 	transformTriangle_.rotate.y += 0.04f;
 	transformSphere_.rotate.y += 0.02f;
 
-	const float width = float(WinApp::kClientWidth);
-	const float height = float(WinApp::kClientHeight);
+	// 現在のウィンドウサイズを使う（リサイズに追従させ、アスペクト比の歪みを防ぐ）
+	const float width = float(WinApp::GetInstance()->GetClientWidth());
+	const float height = float(WinApp::GetInstance()->GetClientHeight());
 
 	// 透視投影
 	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, width / height, 0.1f, 100.0f);
