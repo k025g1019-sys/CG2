@@ -9,6 +9,7 @@
 #include "TransformData3D.h"
 #include "LoadObjFile.h"
 #include "RenderResource.h"
+#include "FrustumCulling.h"
 #include "Engine/Object/Skydome.h"
 // デバッグカメラはDebugビルド限定。このプロジェクトはReleaseでも_DEBUGが定義される
 // （RuntimeLibrary=MultiThreadedDebug）ため、Release判定にはNDEBUGを使う。
@@ -104,13 +105,21 @@ private:
     // --- スプライト描画のオン/オフ（ImGuiで切り替え） ---
     bool drawSprite_ = true;
 
-#ifndef NDEBUG
-    // --- デバッグカメラ（Debugビルドのみ。Releaseでは無効）---
-    DebugCamera debugCamera_;
-    // ピッキング用のローカル空間バウンディング球（Initializeで頂点から算出。球は半径1のユニット球）
+    // --- 視錐台カリング ---
+    // 三角形・OBJのローカル空間バウンディング球（Initializeで頂点から算出。球オブジェクトは半径1のユニット球）。
+    // カリングとデバッグカメラのピッキングで共用するため、Releaseでも保持する。
     Vector3 localCenterTriangle_{ 0.0f, 0.0f, 0.0f };
     float localRadiusTriangle_ = 0.0f;
     Vector3 localCenterObj_{ 0.0f, 0.0f, 0.0f };
     float localRadiusObj_ = 0.0f;
+    // 各オブジェクトのカリング判定結果（Updateで更新し、Drawで参照する）
+    FrustumVisibility triangleVisibility_ = FrustumVisibility::Inside;
+    FrustumVisibility sphereVisibility_ = FrustumVisibility::Inside;
+    FrustumVisibility objVisibility_ = FrustumVisibility::Inside;
+    FrustumVisibility spriteVisibility_ = FrustumVisibility::Inside;
+
+#ifndef NDEBUG
+    // --- デバッグカメラ（Debugビルドのみ。Releaseでは無効）---
+    DebugCamera debugCamera_;
 #endif
 };

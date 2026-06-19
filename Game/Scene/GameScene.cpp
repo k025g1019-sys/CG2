@@ -21,8 +21,7 @@
 #endif
 
 namespace {
-#ifndef NDEBUG
-// 頂点群からローカル空間のバウンディング球（中心と半径）をAABB経由で求める（デバッグカメラのピッキング用）
+// 頂点群からローカル空間のバウンディング球（中心と半径）をAABB経由で求める（カリング／ピッキング用）
 void ComputeLocalBoundingSphere(const VertexData* vertices, size_t count, Vector3& outCenter, float& outRadius) {
 	if (count == 0) {
 		outCenter = { 0.0f, 0.0f, 0.0f };
@@ -57,7 +56,17 @@ void ComputeLocalBoundingSphere(const VertexData* vertices, size_t count, Vector
 	}
 	outRadius = std::sqrt(radiusSq);
 }
-#endif  // !NDEBUG
+
+// CPU側Transformとローカル球から、ワールド空間のバウンディング球を作る（カリング／ピッキングで共用）。
+Sphere MakeWorldSphere(const Transform3D& transform, const Vector3& localCenter, float localRadius) {
+	Matrix4x4 world = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+	Vector3 center = Transform(localCenter, world);
+	// 拡大率の最大成分で半径をスケールする（std::maxはWindows.hのマクロと衝突するため比較で求める）
+	float maxScale = std::fabs(transform.scale.x);
+	if (std::fabs(transform.scale.y) > maxScale) { maxScale = std::fabs(transform.scale.y); }
+	if (std::fabs(transform.scale.z) > maxScale) { maxScale = std::fabs(transform.scale.z); }
+	return Sphere{ center, localRadius * maxScale };
+}
 }  // namespace
 
 void GameScene::Initialize(
@@ -88,10 +97,8 @@ void GameScene::Initialize(
 	for (int i = 0; i < 6; ++i) {
 		vertexDataTriangle_[i].normal = { 0.0f, 0.0f, -1.0f };
 	}
-#ifndef NDEBUG
-	// ピッキング用のバウンディング球を頂点から算出（デバッグカメラ用）
+	// カリング／ピッキング用のバウンディング球を頂点から算出する
 	ComputeLocalBoundingSphere(vertexDataTriangle_, 6, localCenterTriangle_, localRadiusTriangle_);
-#endif
 
 	// --- OBJモデル読み込み ---
 	modelData_ = LoadObjFile("resources", "axis.obj");
@@ -102,10 +109,8 @@ void GameScene::Initialize(
 	VertexData* objVertices = nullptr;
 	vertexResourceObj_->Map(0, nullptr, reinterpret_cast<void**>(&objVertices));
 	std::memcpy(objVertices, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
-#ifndef NDEBUG
-	// ピッキング用のバウンディング球を頂点から算出（デバッグカメラ用）
+	// カリング／ピッキング用のバウンディング球を頂点から算出する
 	ComputeLocalBoundingSphere(modelData_.vertices.data(), modelData_.vertices.size(), localCenterObj_, localRadiusObj_);
-#endif
 
 	// --- 三角形・OBJ共通の3Dマテリアル ---
 	material_ = CreateMaterialResource(device, true);
@@ -187,22 +192,18 @@ void GameScene::Update() {
 	Matrix4x4 cameraMatrix = MakeAffineMatrix(cameraTransform_.scale, cameraTransform_.rotate, cameraTransform_.translate);
 	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
 
+	// 各オブジェクトのワールド空間バウンディング球（カリングとピッキングで共用する）
+	Sphere triangleSphere = MakeWorldSphere(transformTriangle_, localCenterTriangle_, localRadiusTriangle_);
+	Sphere sphereSphere = MakeWorldSphere(transformSphere_, { 0.0f, 0.0f, 0.0f }, 1.0f);  // 球は半径1のユニット球
+	Sphere objSphere = MakeWorldSphere(transformObj_, localCenterObj_, localRadiusObj_);
+
 #ifndef NDEBUG
 	// --- デバッグカメラ更新（Debugビルドのみ。Releaseでは丸ごと除外される）---
 	// ピッキング対象（ワールド空間のバウンディング球）を毎フレーム組み立てる
 	std::vector<DebugCamera::PickTarget> pickTargets;
-	auto addPickTarget = [&pickTargets](const Transform3D& transform, const Vector3& localCenter, float localRadius) {
-		Matrix4x4 world = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-		Vector3 center = Transform(localCenter, world);
-		// 拡大率の最大成分で半径をスケールする（std::maxはWindows.hのマクロと衝突するため比較で求める）
-		float maxScale = std::fabs(transform.scale.x);
-		if (std::fabs(transform.scale.y) > maxScale) { maxScale = std::fabs(transform.scale.y); }
-		if (std::fabs(transform.scale.z) > maxScale) { maxScale = std::fabs(transform.scale.z); }
-		pickTargets.push_back({ center, localRadius * maxScale });
-	};
-	addPickTarget(transformTriangle_, localCenterTriangle_, localRadiusTriangle_);
-	addPickTarget(transformSphere_, { 0.0f, 0.0f, 0.0f }, 1.0f);  // 球は半径1のユニット球
-	addPickTarget(transformObj_, localCenterObj_, localRadiusObj_);
+	pickTargets.push_back({ triangleSphere.center, triangleSphere.radius });
+	pickTargets.push_back({ sphereSphere.center, sphereSphere.radius });
+	pickTargets.push_back({ objSphere.center, objSphere.radius });
 
 	// ImGuiがマウスを使用中はデバッグカメラのマウス操作を無視する
 	bool blockMouse = false;
@@ -217,6 +218,12 @@ void GameScene::Update() {
 	}
 #endif  // !NDEBUG
 
+	// --- 視錐台カリング（viewMatrix確定後に判定。OutsideのオブジェクトはDrawで描画スキップ）---
+	Frustum3D frustum = MakeFrustumFromViewProjection(Multiply(viewMatrix, projectionMatrix));
+	triangleVisibility_ = ClassifyFrustum(frustum, triangleSphere);
+	sphereVisibility_ = ClassifyFrustum(frustum, sphereSphere);
+	objVisibility_ = ClassifyFrustum(frustum, objSphere);
+
 	UpdateTransformMatrix(triangleTransform_, transformTriangle_, viewMatrix, projectionMatrix);
 	UpdateTransformMatrix(sphereTransform_, transformSphere_, viewMatrix, projectionMatrix);
 	UpdateTransformMatrix(objTransform_, transformObj_, viewMatrix, projectionMatrix);
@@ -230,6 +237,26 @@ void GameScene::Update() {
 	Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(0.0f, 0.0f, width, height, 0.0f, 100.0f);
 	spriteTransform_.data->WVP = Multiply(worldMatrixSprite, Multiply(viewMatrixSprite, projectionMatrixSprite));
 	spriteTransform_.data->World = worldMatrixSprite;
+
+	// --- スプライトの2D視錐台カリング（可視範囲は画面矩形）---
+	// 4頂点をワールド変換してスクリーン空間のAABBを作り、画面矩形（0,0)-(width,height)と判定する
+	Vector2 spriteMin{ 0.0f, 0.0f };
+	Vector2 spriteMax{ 0.0f, 0.0f };
+	for (int i = 0; i < 4; ++i) {
+		Vector3 local{ vertexDataSprite_[i].position.x, vertexDataSprite_[i].position.y, vertexDataSprite_[i].position.z };
+		Vector3 screen = Transform(local, worldMatrixSprite);
+		if (i == 0) {
+			spriteMin = { screen.x, screen.y };
+			spriteMax = { screen.x, screen.y };
+		} else {
+			if (screen.x < spriteMin.x) { spriteMin.x = screen.x; }
+			if (screen.y < spriteMin.y) { spriteMin.y = screen.y; }
+			if (screen.x > spriteMax.x) { spriteMax.x = screen.x; }
+			if (screen.y > spriteMax.y) { spriteMax.y = screen.y; }
+		}
+	}
+	Frustum2D screenFrustum = MakeFrustumFromRect({ 0.0f, 0.0f }, { width, height });
+	spriteVisibility_ = ClassifyFrustum(screenFrustum, AABB2D{ spriteMin, spriteMax });
 
 	// スプライトのUV変換行列
 	Matrix4x4 uvTransformMatrix = MakeScaleMatrix(uvTransformSprite_.scale);
@@ -400,6 +427,22 @@ void GameScene::DrawImGui(ID3D12Device* device) {
 	}
 
 	ImGui::End();
+
+	// --- 視錐台カリングの判定結果表示 ---
+	ImGui::Begin("Frustum Culling");
+	auto visibilityText = [](FrustumVisibility visibility) -> const char* {
+		switch (visibility) {
+		case FrustumVisibility::Inside:    return "Inside";
+		case FrustumVisibility::Intersect: return "Intersect";
+		case FrustumVisibility::Outside:   return "Outside";
+		}
+		return "Unknown";
+	};
+	ImGui::Text("Triangle (sphere) : %s", visibilityText(triangleVisibility_));
+	ImGui::Text("Sphere   (sphere) : %s", visibilityText(sphereVisibility_));
+	ImGui::Text("Obj      (sphere) : %s", visibilityText(objVisibility_));
+	ImGui::Text("Sprite   (2D AABB): %s", visibilityText(spriteVisibility_));
+	ImGui::End();
 }
 #endif
 
@@ -425,32 +468,38 @@ void GameScene::Draw(
 	commandList->SetGraphicsRootConstantBufferView(2, light_.resource->GetGPUVirtualAddress());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// --- 三角形描画 ---
-	DrawObject(
-		commandList,
-		vbvTriangle_,
-		textureHandles[triangleTextureIndex_],
-		triangleTransform_.resource.Get(),
-		6);
+	// --- 三角形描画（視錐台カリング：Outsideならスキップ）---
+	if (IsVisible(triangleVisibility_)) {
+		DrawObject(
+			commandList,
+			vbvTriangle_,
+			textureHandles[triangleTextureIndex_],
+			triangleTransform_.resource.Get(),
+			6);
+	}
 
-	// --- 球描画 ---
-	DrawObject(
-		commandList,
-		vbvSphere_,
-		textureHandles[sphereTextureIndex_],
-		sphereTransform_.resource.Get(),
-		sphereVertexCount_);
+	// --- 球描画（視錐台カリング：Outsideならスキップ）---
+	if (IsVisible(sphereVisibility_)) {
+		DrawObject(
+			commandList,
+			vbvSphere_,
+			textureHandles[sphereTextureIndex_],
+			sphereTransform_.resource.Get(),
+			sphereVertexCount_);
+	}
 
-	// --- OBJ描画 ---
-	DrawObject(
-		commandList,
-		vbvObj_,
-		textureHandles[objTextureIndex_],
-		objTransform_.resource.Get(),
-		UINT(modelData_.vertices.size()));
+	// --- OBJ描画（視錐台カリング：Outsideならスキップ）---
+	if (IsVisible(objVisibility_)) {
+		DrawObject(
+			commandList,
+			vbvObj_,
+			textureHandles[objTextureIndex_],
+			objTransform_.resource.Get(),
+			UINT(modelData_.vertices.size()));
+	}
 
-	// --- スプライト描画（インデックス6個でクアッド。drawSprite_がfalseなら描かない）---
-	if (drawSprite_) {
+	// --- スプライト描画（インデックス6個でクアッド。drawSprite_がfalse、または画面外なら描かない）---
+	if (drawSprite_ && IsVisible(spriteVisibility_)) {
 		commandList->SetGraphicsRootDescriptorTable(3, textureHandles[spriteTextureIndex_]);
 		commandList->IASetVertexBuffers(0, 1, &vbvSprite_);
 		commandList->IASetIndexBuffer(&ibvSprite_);

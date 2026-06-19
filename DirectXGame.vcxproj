@@ -55,7 +55,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Collision;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -83,7 +83,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Collision;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -98,6 +98,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Camera\DebugCamera.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Engine\Collision\FrustumCulling.cpp" />
     <ClCompile Include="Engine\Core\DirectXCore.cpp" />
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp" />
@@ -143,6 +144,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   <ItemGroup>
     <ClInclude Include="Engine\Audio\Audio.h" />
     <ClInclude Include="Engine\Camera\DebugCamera.h" />
+    <ClInclude Include="Engine\Collision\FrustumCulling.h" />
     <ClInclude Include="Engine\Core\DirectXCore.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Geometry\GeometryGenerator.h" />
