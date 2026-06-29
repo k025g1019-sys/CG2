@@ -13,7 +13,7 @@ struct TransformationMatrix;
 // オブジェクト描画に使う定数バッファ群と描画ヘルパ。
 // resourceはComPtrで自動開放。dataはMap済みの書き込み先ポインタ（resource生存中のみ有効）。
 
-#pragma region TransformationMatrix（WVP / World）
+#pragma region TransformationMatrix（World）
 
 struct TransformResource {
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
@@ -22,12 +22,27 @@ struct TransformResource {
 
 TransformResource CreateTransformResource(ID3D12Device* device);
 
-// Transformからworld/wvpを計算してTransformResourceへ書き込む
+// Transformからワールド行列を計算してTransformResourceへ書き込む（視点に依存しない）
 void UpdateTransformMatrix(
     TransformResource& transformResource,
-    const Transform3D& transform,
-    const Matrix4x4& view,
-    const Matrix4x4& projection);
+    const Transform3D& transform);
+
+#pragma endregion
+
+
+#pragma region ViewProjection（視点ごとのビュー射影行列）
+
+struct ViewProjectionResource {
+    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+    Matrix4x4* data = nullptr;
+};
+
+ViewProjectionResource CreateViewProjectionResource(ID3D12Device* device);
+
+// ビュー射影行列をViewProjectionResourceへ書き込む
+void UpdateViewProjection(
+    ViewProjectionResource& viewProjectionResource,
+    const Matrix4x4& viewProjection);
 
 #pragma endregion
 

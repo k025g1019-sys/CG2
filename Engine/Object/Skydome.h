@@ -33,18 +33,19 @@ public:
         IDxcBlob* pixelShader);
 
     /// <summary>
-    /// カメラのビュー行列から追従位置を決め、WVPを更新する。毎フレーム1回呼ぶ。
+    /// カメラのビュー行列から追従位置を決め、ワールド行列を更新する。毎フレーム1回呼ぶ。
+    /// ビュー射影は視点ごとに別CBufferで供給するため、ここでは扱わない（中心カメラのビューのみ使う）。
     /// </summary>
-    void Update(const Matrix4x4& view, const Matrix4x4& projection);
+    void Update(const Matrix4x4& centerView);
 
     /// <summary>
     /// 専用PSOに切り替えて天球を描画する（背景なので他オブジェクトより先に呼ぶ）。
+    /// ルートシグネチャと視点ごとのビュー射影（b1[VS]）は呼び出し側で設定済みの前提。
     /// </summary>
     /// <param name="textureHandle">天球テクスチャのSRV(GPUハンドル)</param>
     /// <param name="lightResource">共通ルートsignが要求するため設定する平行光源（ライティングは無効）</param>
     void Draw(
         ID3D12GraphicsCommandList* commandList,
-        ID3D12RootSignature* rootSignature,
         D3D12_GPU_DESCRIPTOR_HANDLE textureHandle,
         ID3D12Resource* lightResource);
 
@@ -63,7 +64,7 @@ private:
     // --- マテリアル（ライティング無効）---
     MaterialResource material_;
 
-    // --- Transform（WVP / World）---
+    // --- Transform（World。ビュー射影は視点ごとに別CBufferで供給）---
     TransformResource transform_;
 
     // --- 内側から見えるようカリングを無効化した専用PSO ---

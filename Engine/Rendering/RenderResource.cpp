@@ -7,7 +7,7 @@
 #include "Material.h"
 #include "Engine/Light/DirectionalLight.h"
 
-#pragma region TransformationMatrix（WVP / World）
+#pragma region TransformationMatrix（World）
 
 TransformResource CreateTransformResource(ID3D12Device* device) {
 	TransformResource result;
@@ -15,7 +15,6 @@ TransformResource CreateTransformResource(ID3D12Device* device) {
 	result.resource = CreateBufferResource(device, sizeof(TransformationMatrix));
 	result.resource->Map(0, nullptr, reinterpret_cast<void**>(&result.data));
 
-	result.data->WVP = MakeIdentity4x4();
 	result.data->World = MakeIdentity4x4();
 
 	return result;
@@ -23,14 +22,30 @@ TransformResource CreateTransformResource(ID3D12Device* device) {
 
 void UpdateTransformMatrix(
 	TransformResource& transformResource,
-	const Transform3D& transform,
-	const Matrix4x4& view,
-	const Matrix4x4& projection) {
+	const Transform3D& transform) {
 	Matrix4x4 world = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-	Matrix4x4 wvp = Multiply(world, Multiply(view, projection));
-
 	transformResource.data->World = world;
-	transformResource.data->WVP = wvp;
+}
+
+#pragma endregion
+
+#pragma region ViewProjection（視点ごとのビュー射影行列）
+
+ViewProjectionResource CreateViewProjectionResource(ID3D12Device* device) {
+	ViewProjectionResource result;
+
+	result.resource = CreateBufferResource(device, sizeof(Matrix4x4));
+	result.resource->Map(0, nullptr, reinterpret_cast<void**>(&result.data));
+
+	*result.data = MakeIdentity4x4();
+
+	return result;
+}
+
+void UpdateViewProjection(
+	ViewProjectionResource& viewProjectionResource,
+	const Matrix4x4& viewProjection) {
+	*viewProjectionResource.data = viewProjection;
 }
 
 #pragma endregion

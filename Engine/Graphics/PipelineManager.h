@@ -24,7 +24,7 @@ public:
     static Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateGraphicsPipeline(const PipelineConfig& config);
 
     // このプロジェクト標準のRootSignatureを生成する
-    // (b0:Material[PS], b0:Transform[VS], b1:Light[PS], t0:Texture[PS], s0:Sampler)
+    // (b0:Material[PS], b0:World[VS], b1:Light[PS], t0:Texture[PS], s0:Sampler, b1:ViewProjection[VS])
     static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* device);
 
     // このプロジェクト標準のInputLayout/各種Stateで描画パイプラインを生成する。

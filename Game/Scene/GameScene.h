@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 #include <dxcapi.h>
 #include <wrl.h>
 
@@ -23,27 +24,46 @@ struct VertexData;
 class GameScene {
 public:
     // device:リソース生成 / rootSignature・各シェーダー:天球の専用PSO生成に使用
+    // viewCount:立体視の視点数（視点ごとのビュー射影CBufferを確保する）
     void Initialize(
         ID3D12Device* device,
         ID3D12RootSignature* rootSignature,
         IDxcBlob* vertexShader,
-        IDxcBlob* pixelShader);
+        IDxcBlob* pixelShader,
+        uint32_t viewCount);
 
     // UI操作を反映した行列計算と定数バッファ更新
     void Update();
+
+    // 視線追跡の状態を反映する（Updateの前に毎フレーム呼ぶ）。
+    // enabled:視線追跡ON / gazeX,gazeY:正規化視線[-1..1]（-1左下 +1右上） / headZ:奥行き[-1..1]
+    // enabledかつ値が非ゼロのとき、頭連動オフアクシス投影でカメラ視点をずらす。
+    void SetEyeTracking(bool enabled, float gazeX, float gazeY, float headZ) {
+        eyeTrackingEnabled_ = enabled;
+        gazeX_ = gazeX;
+        gazeY_ = gazeY;
+        gazeZ_ = headZ;
+    }
+
+    // 描画先のアスペクト補正（Updateの前に毎フレーム呼ぶ）。
+    // ゲーム描画が表示される横方向の割合を渡す（通常=1.0 / 左右分割でゲームが左半分のとき=0.5）。
+    // 投影のアスペクト比をこの割合ぶん横に詰め、分割しても物体が伸び縮みしないようにする。
+    void SetRenderAspectScale(float horizontalScale) { renderAspectScale_ = horizontalScale; }
 
 #ifdef USE_IMGUI
     // 開発用ImGuiウィンドウの構築（deviceは球の再分割時の再生成に使用）
     void DrawImGui(ID3D12Device* device);
 #endif
 
-    // 描画コマンドを積む。textureHandlesは読み込み済みテクスチャのSRV(GPUハンドル)配列
+    // 描画コマンドを積む。textureHandlesは読み込み済みテクスチャのSRV(GPUハンドル)配列。
+    // viewIndex:描画する視点（この視点のビュー射影CBufferをVSへバインドする）。視点数ぶん呼ぶ。
     void Draw(
         ID3D12GraphicsCommandList* commandList,
         ID3D12RootSignature* rootSignature,
         ID3D12PipelineState* pipelineState,
         ID3D12DescriptorHeap* srvDescriptorHeap,
-        const D3D12_GPU_DESCRIPTOR_HANDLE* textureHandles);
+        const D3D12_GPU_DESCRIPTOR_HANDLE* textureHandles,
+        uint32_t viewIndex);
 
 private:
     // --- 三角形 ---
@@ -82,6 +102,28 @@ private:
     TransformResource sphereTransform_;
     TransformResource objTransform_;
     TransformResource spriteTransform_;
+
+    // --- 立体視：視点ごとのビュー射影CBuffer（viewCountぶん）＋スプライト用の正射影CBuffer ---
+    uint32_t viewCount_ = 1;
+    std::vector<ViewProjectionResource> viewProjections_;  // [viewIndex] 3D用のビュー射影（眼ごと）
+    ViewProjectionResource spriteViewProjection_;          // スプライト（2D）用の正射影（視点非依存）
+
+    // 共有ステレオパラメータ（ImGuiで調整）。視点描画に効く。
+    float eyeSeparation_ = 0.1f;   // 眼間距離（ワールド単位）
+    float convergence_ = 10.0f;    // 収束距離（視差ゼロ面までの距離。カメラ→被写体の距離が目安）
+
+    // --- 視線追跡（頭連動オフアクシス）---
+    // 視線位置を擬似的な頭位置とみなし、カメラを左右/上下へ平行移動＋射影を水平/垂直シアーする
+    // （収束面を固定したまま「窓の中を覗き込む」3DS風の運動視差。物体を立体的な角度から見やすくする）。
+    bool eyeTrackingEnabled_ = false;
+    float gazeX_ = 0.0f;  // 正規化視線（-1左/+1右）
+    float gazeY_ = 0.0f;  // 正規化視線（-1下/+1上）
+    float gazeZ_ = 0.0f;  // 正規化奥行き（-1後/+1前。未使用）
+    float gazeMoveScaleX_ = 1.2f;  // 視線が端のときの水平移動量（ワールド単位）
+    float gazeMoveScaleY_ = 0.7f;  // 視線が端のときの垂直移動量（ワールド単位）
+
+    // 描画先の横方向の割合（1.0=画面全体 / 0.5=左右分割でゲームが左半分）。投影アスペクト補正に使う。
+    float renderAspectScale_ = 1.0f;
 
     // --- CPU側Transform ---
     Transform3D transformTriangle_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {2.5f, 0.0f, 0.0f} };

@@ -185,6 +185,10 @@ void DirectXCore::InitializeSwapChain(
     hr = swapChain1.As(&swapChain_);
 
     assert(SUCCEEDED(hr));
+
+    // Alt+EnterによるDXGIの排他フルスクリーン切り替えを無効化する
+    // （全画面はWinAppのボーダレス方式で行うため、排他モードと競合させない）
+    dxgiFactory_->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 }
 
 void DirectXCore::InitializeDescriptorHeaps() {

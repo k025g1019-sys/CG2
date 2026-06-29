@@ -1,13 +1,20 @@
 #include "Object3d.hlsli"
+
+// オブジェクトごとのワールド行列（視点に依存しない）
 struct TransformationMatrix
 {
-    float4x4 WVP;
     float4x4 World;
 };
 
 cbuffer TransformationMatrixBuffer : register(b0)
 {
     TransformationMatrix gTransformationMatrix;
+};
+
+// 視点ごとのビュー射影行列（立体視で視点ごとに差し替える）
+cbuffer ViewProjectionBuffer : register(b1)
+{
+    float4x4 gViewProjection;
 };
 
 struct VertexShaderInput {
@@ -17,9 +24,8 @@ struct VertexShaderInput {
 };
 VertexShaderOutput main(VertexShaderInput input) {
     VertexShaderOutput output;
-    output.position =
-    mul(input.position,
-        gTransformationMatrix.WVP);
+    float4 worldPosition = mul(input.position, gTransformationMatrix.World);
+    output.position = mul(worldPosition, gViewProjection);
     output.texcoord = input.texcoord;
 
     output.normal =

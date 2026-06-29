@@ -40,12 +40,13 @@ void Skydome::Initialize(
 		device, rootSignature, vertexShader, pixelShader, D3D12_CULL_MODE_NONE);
 }
 
-void Skydome::Update(const Matrix4x4& view, const Matrix4x4& projection) {
+void Skydome::Update(const Matrix4x4& centerView) {
 	// カメラ追従ON時は中心をカメラのワールド位置へ合わせ、どこへ動いても境界が見えないようにする。
 	// ビュー行列の逆行列がカメラのワールド行列なので、その原点を変換して位置を得る。
+	// 立体視では左右の眼でわずかにカメラ位置が異なるが、天球は十分大きく視差が無視できるため中心カメラで中心を決める。
 	Vector3 center = position_;
 	if (followCamera_) {
-		Matrix4x4 cameraWorld = Inverse(view);
+		Matrix4x4 cameraWorld = Inverse(centerView);
 		Vector3 origin{ 0.0f, 0.0f, 0.0f };
 		center = Transform(origin, cameraWorld);
 	}
@@ -55,17 +56,16 @@ void Skydome::Update(const Matrix4x4& view, const Matrix4x4& projection) {
 		{ 0.0f, 0.0f, 0.0f },
 		center
 	};
-	UpdateTransformMatrix(transform_, world, view, projection);
+	UpdateTransformMatrix(transform_, world);
 }
 
 void Skydome::Draw(
 	ID3D12GraphicsCommandList* commandList,
-	ID3D12RootSignature* rootSignature,
 	D3D12_GPU_DESCRIPTOR_HANDLE textureHandle,
 	ID3D12Resource* lightResource) {
 
-	// 専用PSO（カリング無効）に切り替える。DescriptorHeapは呼び出し側で設定済みの前提。
-	commandList->SetGraphicsRootSignature(rootSignature);
+	// 専用PSO（カリング無効）に切り替える。
+	// ルートシグネチャ・DescriptorHeap・視点ごとのビュー射影(b1[VS])は呼び出し側で設定済みの前提。
 	commandList->SetPipelineState(pipelineState_.Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

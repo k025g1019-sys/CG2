@@ -23,6 +23,13 @@ public:
     // サイズ変化フラグを下ろす（リサイズ処理後に呼ぶ）
     void ClearSizeChangedFlag() { sizeChanged_ = false; }
 
+    // ボーダレス全画面（枠なしでモニタ全体を覆う）の切り替え。
+    // 物理パララックスバリア／レンチキュラーをネイティブ解像度で1:1整列させるために使う。
+    // サイズ変更はWM_SIZE経由でsizeChanged_が立ち、既存のリサイズ処理がスワップチェーン等を作り直す。
+    void SetFullscreen(bool enable);
+    void ToggleFullscreen() { SetFullscreen(!fullscreen_); }
+    bool IsFullscreen() const { return fullscreen_; }
+
     HWND GetHwnd() const {
         return hwnd_;
     }
@@ -43,6 +50,12 @@ private:
     int32_t clientHeight_ = kClientHeight;
     // サイズが変化したフレームでtrueになる
     bool sizeChanged_ = false;
+
+    // --- ボーダレス全画面の状態。復帰用に元のスタイル・矩形を保存する ---
+    bool fullscreen_ = false;
+    LONG_PTR savedStyle_ = 0;
+    LONG_PTR savedExStyle_ = 0;
+    RECT savedWindowRect_{};
 
 private:
     static LRESULT CALLBACK WindowProc(
