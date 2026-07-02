@@ -1,4 +1,4 @@
-#include "DirectXCore.h"
+#include "Engine/Core/DirectXCore.h"
 
 #include <cassert>
 
@@ -110,6 +110,29 @@ void DirectXCore::InitializeDXGIDevice() {
     }
 
     assert(device_ != nullptr);
+
+#ifdef _DEBUG
+    // 危険なエラーで停止し、既知の偽エラーは抑制する
+    {
+        ComPtr<ID3D12InfoQueue> infoQueue;
+        if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+            // Windows11のDXGI/DX12デバッグレイヤー相互作用バグによるエラーを抑制
+            // https://stackoverflow.com/questions/69805245/directx-12-application-is-crashing-in-windows-11
+            D3D12_MESSAGE_ID denyIds[] = {
+                D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
+            };
+            D3D12_MESSAGE_SEVERITY severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
+            D3D12_INFO_QUEUE_FILTER filter{};
+            filter.DenyList.NumIDs = _countof(denyIds);
+            filter.DenyList.pIDList = denyIds;
+            filter.DenyList.NumSeverities = _countof(severities);
+            filter.DenyList.pSeverityList = severities;
+            infoQueue->PushStorageFilter(&filter);
+        }
+    }
+#endif
 }
 
 void DirectXCore::InitializeCommand() {
@@ -125,17 +148,21 @@ void DirectXCore::InitializeCommand() {
 
     assert(SUCCEEDED(hr));
 
-    hr = device_->CreateCommandAllocator(
-        D3D12_COMMAND_LIST_TYPE_DIRECT,
-        IID_PPV_ARGS(&commandAllocator_)
-    );
+    // フレームごとのコマンドアロケータを作る（CPU/GPUの並列化のため）
+    for (auto& commandAllocator : commandAllocators_) {
 
-    assert(SUCCEEDED(hr));
+        hr = device_->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT,
+            IID_PPV_ARGS(&commandAllocator)
+        );
+
+        assert(SUCCEEDED(hr));
+    }
 
     hr = device_->CreateCommandList(
         0,
         D3D12_COMMAND_LIST_TYPE_DIRECT,
-        commandAllocator_.Get(),
+        commandAllocators_[0].Get(),
         nullptr,
         IID_PPV_ARGS(&commandList_)
     );
@@ -249,7 +276,7 @@ void DirectXCore::CreateSwapChainRenderTargets() {
 
     for (uint32_t i = 0; i < kSwapChainBufferCount; ++i) {
 
-        HRESULT hr = swapChain_->GetBuffer(
+        [[maybe_unused]] HRESULT hr = swapChain_->GetBuffer(
             i,
             IID_PPV_ARGS(&swapChainResources_[i])
         );
@@ -313,7 +340,7 @@ void DirectXCore::UpdateViewportAndScissor(int32_t width, int32_t height) {
 
 void DirectXCore::InitializeFence() {
 
-    HRESULT hr = device_->CreateFence(
+    [[maybe_unused]] HRESULT hr = device_->CreateFence(
         fenceValue_,
         D3D12_FENCE_FLAG_NONE,
         IID_PPV_ARGS(&fence_)
@@ -353,7 +380,7 @@ void DirectXCore::Resize(int32_t width, int32_t height) {
     depthStencilResource_.Reset();
 
     // スワップチェーンのバッファをウィンドウサイズに合わせて作り直す
-    HRESULT hr = swapChain_->ResizeBuffers(
+    [[maybe_unused]] HRESULT hr = swapChain_->ResizeBuffers(
         kSwapChainBufferCount,
         static_cast<UINT>(width),
         static_cast<UINT>(height),
@@ -428,6 +455,10 @@ void DirectXCore::BeginFrame() {
         0,
         nullptr
     );
+
+    // 描画で使うSRVディスクリプタヒープを設定する（シーン・ImGui共通）
+    ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap_.Get() };
+    commandList_->SetDescriptorHeaps(1, descriptorHeaps);
 }
 
 void DirectXCore::WaitForGPU() {
@@ -486,17 +517,26 @@ void DirectXCore::EndFrame() {
 
     swapChain_->Present(1, 0);
 
+    // このフレームの完了を示すフェンス値を記録してシグナルする
+    // （完了は待たない。CPUはすぐ次フレームの準備に進める）
     ++fenceValue_;
+
+    frameFenceValues_[backBufferIndex] = fenceValue_;
 
     commandQueue_->Signal(
         fence_.Get(),
         fenceValue_
     );
 
-    if (fence_->GetCompletedValue() < fenceValue_) {
+    // 次に使うフレームスロット（Presentでバックバッファが切り替わった後のindex）の
+    // 前回の描画がまだ終わっていなければ、ここで完了を待つ。
+    // これによりCPUはGPUよりkFramesInFlight-1フレームだけ先行できる。
+    UINT nextFrameIndex = swapChain_->GetCurrentBackBufferIndex();
+
+    if (fence_->GetCompletedValue() < frameFenceValues_[nextFrameIndex]) {
 
         fence_->SetEventOnCompletion(
-            fenceValue_,
+            frameFenceValues_[nextFrameIndex],
             fenceEvent_
         );
 
@@ -506,12 +546,13 @@ void DirectXCore::EndFrame() {
         );
     }
 
-    hr = commandAllocator_->Reset();
+    // 完了済みになった次フレーム用アロケータでコマンドリストをリセットする
+    hr = commandAllocators_[nextFrameIndex]->Reset();
 
     assert(SUCCEEDED(hr));
 
     hr = commandList_->Reset(
-        commandAllocator_.Get(),
+        commandAllocators_[nextFrameIndex].Get(),
         nullptr
     );
 
@@ -519,6 +560,9 @@ void DirectXCore::EndFrame() {
 }
 
 void DirectXCore::Finalize() {
+
+    // 実行中のフレームが残っているとリソース解放でGPUがクラッシュするため、完了を待つ
+    WaitForGPU();
 
     CloseHandle(fenceEvent_);
 
@@ -542,7 +586,9 @@ void DirectXCore::Finalize() {
 
     commandList_.Reset();
 
-    commandAllocator_.Reset();
+    for (auto& commandAllocator : commandAllocators_) {
+        commandAllocator.Reset();
+    }
 
     commandQueue_.Reset();
 
@@ -560,4 +606,12 @@ DirectXCore::GetCurrentRTVHandle() const {
         swapChain_->GetCurrentBackBufferIndex();
 
     return rtvHandles_[backBufferIndex];
+}
+
+uint32_t DirectXCore::GetFrameIndex() const {
+
+    // バックバッファ数とフレームインフライト数は一致している前提
+    static_assert(kFramesInFlight == kSwapChainBufferCount);
+
+    return swapChain_->GetCurrentBackBufferIndex();
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Matrix4x4.h"
+#include "Engine/Math/Vector2.h"
+#include "Engine/Math/Vector3.h"
+#include "Engine/Math/Matrix4x4.h"
 
 // =============================================================
 // 視錐台カリング用の形状・平面・視錐台と、その交差判定。

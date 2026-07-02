@@ -1,102 +1,69 @@
 #pragma once
 
-#include <d3d12.h>
 #include <cstddef>
 #include <cstdint>
-#include <dxcapi.h>
-#include <wrl.h>
+#include <d3d12.h>
 
-#include "TransformData3D.h"
-#include "LoadObjFile.h"
-#include "RenderResource.h"
-#include "FrustumCulling.h"
-#include "Engine/Object/Skydome.h"
+#include "Engine/Camera/Camera.h"
+#include "Engine/Light/DirectionalLight.h"
+#include "Game/Object/Skydome.h"
+#include "Engine/Rendering/ConstantBuffer.h"
+#include "Engine/Rendering/Mesh.h"
+#include "Engine/Rendering/Object3D.h"
+#include "Engine/Rendering/Sprite.h"
 // デバッグカメラはDebugビルド限定。このプロジェクトはReleaseでも_DEBUGが定義される
 // （RuntimeLibrary=MultiThreadedDebug）ため、Release判定にはNDEBUGを使う。
 #ifndef NDEBUG
 #include "Engine/Camera/DebugCamera.h"
 #endif
 
-struct VertexData;
-
-// デモ用シーン。三角形・球・OBJ・スプライトと開発用ImGuiを保持する。
+// デモ用シーン。三角形・球・OBJ・スプライト・天球と開発用ImGuiを保持する。
 class GameScene {
 public:
-    // device:リソース生成 / rootSignature・各シェーダー:天球の専用PSO生成に使用
-    void Initialize(
-        ID3D12Device* device,
-        ID3D12RootSignature* rootSignature,
-        IDxcBlob* vertexShader,
-        IDxcBlob* pixelShader);
+    // 各リソースを生成する（DirectXCore・PipelineManager・TextureManagerの初期化後に呼ぶ）
+    void Initialize();
 
-    // UI操作を反映した行列計算と定数バッファ更新
+    // UI操作を反映した行列計算・定数バッファ更新・カリング判定
     void Update();
 
 #ifdef USE_IMGUI
-    // 開発用ImGuiウィンドウの構築（deviceは球の再分割時の再生成に使用）
-    void DrawImGui(ID3D12Device* device);
+    // 開発用ImGuiウィンドウの構築
+    void DrawImGui();
 #endif
 
-    // 描画コマンドを積む。textureHandlesは読み込み済みテクスチャのSRV(GPUハンドル)配列
-    void Draw(
-        ID3D12GraphicsCommandList* commandList,
-        ID3D12RootSignature* rootSignature,
-        ID3D12PipelineState* pipelineState,
-        ID3D12DescriptorHeap* srvDescriptorHeap,
-        const D3D12_GPU_DESCRIPTOR_HANDLE* textureHandles);
+    // 描画コマンドを積む
+    void Draw(ID3D12GraphicsCommandList* commandList);
 
 private:
-    // --- 三角形 ---
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceTriangle_;
-    VertexData* vertexDataTriangle_ = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW vbvTriangle_{};
+    // --- メッシュ（形状データ）---
+    Mesh triangleMesh_;
+    Mesh sphereMesh_;
+    Mesh objMesh_;
 
-    // --- OBJ ---
-    ModelData modelData_;
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceObj_;
-    D3D12_VERTEX_BUFFER_VIEW vbvObj_{};
+    // --- 描画オブジェクト ---
+    Object3D triangle_;
+    Object3D sphere_;
+    Object3D obj_;
+    Sprite sprite_;
+    Skydome skydome_;  // 背景（最初に描画）
 
-    // --- 天球（背景）---
-    Skydome skydome_;
+    // --- カメラ ---
+    Camera camera_;
 
-    // --- 球 ---
+    // --- 平行光源（CPU側の値をImGuiで編集し、Updateで定数バッファへ書き込む）---
+    DirectionalLight light_{ { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, -1.0f, 0.0f }, 1.0f };
+    ConstantBuffer<DirectionalLight> lightCB_;
+
+    // --- 球の分割数（ImGuiで変更すると頂点を再生成する）---
     uint32_t subdivision_ = 16;
     uint32_t prevSubdivision_ = 16;
-    uint32_t sphereVertexCount_ = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSphere_;
-    D3D12_VERTEX_BUFFER_VIEW vbvSphere_{};
 
-    // --- スプライト ---
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite_;
-    VertexData* vertexDataSprite_ = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW vbvSprite_{};
-    Microsoft::WRL::ComPtr<ID3D12Resource> indexResourceSprite_;
-    uint32_t* indexDataSprite_ = nullptr;
-    D3D12_INDEX_BUFFER_VIEW ibvSprite_{};
-
-    // --- マテリアル / ライト / Transformリソース ---
-    MaterialResource material_;        // 三角形・OBJ共通の3Dマテリアル
-    MaterialResource spriteMaterial_;  // スプライト用（ライティング無効）
-    DirectionalLightResource light_;
-    TransformResource triangleTransform_;
-    TransformResource sphereTransform_;
-    TransformResource objTransform_;
-    TransformResource spriteTransform_;
-
-    // --- CPU側Transform ---
-    Transform3D transformTriangle_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {2.5f, 0.0f, 0.0f} };
-    Transform3D transformSphere_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
-    Transform3D transformObj_{ {1.0f, 1.0f, 1.0f}, {0.0f, 3.1415f, 0.0f}, {0.0f, 0.0f, 0.0f} };
-    Transform3D transformSprite_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
-    Transform3D uvTransformSprite_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
-    Transform3D cameraTransform_{ {1.0f, 1.0f, 1.0f}, {0.04f, 0.0f, 0.0f}, {0.0f, 1.7f, -10.0f} };
-
-    // --- 使用するテクスチャの選択（textureHandlesへのindex）---
-    uint32_t triangleTextureIndex_ = 0;
-    uint32_t sphereTextureIndex_ = 1;
-    uint32_t objTextureIndex_ = 0;
-    uint32_t spriteTextureIndex_ = 0;
-    uint32_t skydomeTextureIndex_ = 2;  // textureHandles[2] = sky_sphere.png
+    // --- シーンで使うテクスチャ（TextureManagerのハンドル。ImGuiのComboに対応）---
+    uint32_t textureHandles_[2] = {};  // 0:uvChecker / 1:monsterBall
+    int triangleTextureIndex_ = 0;
+    int sphereTextureIndex_ = 1;
+    int objTextureIndex_ = 0;
+    int spriteTextureIndex_ = 0;
 
     // --- サウンド ---
     size_t soundHandle_ = 0;     // Alarm01.wavのハンドル
@@ -104,19 +71,6 @@ private:
 
     // --- スプライト描画のオン/オフ（ImGuiで切り替え） ---
     bool drawSprite_ = true;
-
-    // --- 視錐台カリング ---
-    // 三角形・OBJのローカル空間バウンディング球（Initializeで頂点から算出。球オブジェクトは半径1のユニット球）。
-    // カリングとデバッグカメラのピッキングで共用するため、Releaseでも保持する。
-    Vector3 localCenterTriangle_{ 0.0f, 0.0f, 0.0f };
-    float localRadiusTriangle_ = 0.0f;
-    Vector3 localCenterObj_{ 0.0f, 0.0f, 0.0f };
-    float localRadiusObj_ = 0.0f;
-    // 各オブジェクトのカリング判定結果（Updateで更新し、Drawで参照する）
-    FrustumVisibility triangleVisibility_ = FrustumVisibility::Inside;
-    FrustumVisibility sphereVisibility_ = FrustumVisibility::Inside;
-    FrustumVisibility objVisibility_ = FrustumVisibility::Inside;
-    FrustumVisibility spriteVisibility_ = FrustumVisibility::Inside;
 
 #ifndef NDEBUG
     // --- デバッグカメラ（Debugビルドのみ。Releaseでは無効）---

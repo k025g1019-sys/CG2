@@ -1,4 +1,4 @@
-#include "GpuResource.h"
+#include "Engine/Graphics/GpuResource.h"
 
 #include <cassert>
 
@@ -25,7 +25,7 @@ ComPtr<ID3D12Resource> CreateBufferResource(ID3D12Device* device, size_t sizeInB
 
 	// 実際にバッファリソースを作る
 	ComPtr<ID3D12Resource> resource;
-	HRESULT hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
+	[[maybe_unused]] HRESULT hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		IID_PPV_ARGS(&resource));
 	assert(SUCCEEDED(hr));
@@ -56,7 +56,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(ID3D12Device* device, i
 
 	// Resourceの生成
 	ComPtr<ID3D12Resource> resource;
-	HRESULT hr = device->CreateCommittedResource(
+	[[maybe_unused]] HRESULT hr = device->CreateCommittedResource(
 		&heapProperties, // Heapの設定
 		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし。
 		&resourceDesc, // Resourceの設定

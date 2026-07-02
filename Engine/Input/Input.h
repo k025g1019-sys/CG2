@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-#include "Vector2.h"
+#include "Engine/Math/Vector2.h"
 
 // マウスボタンのインデックス（IsMousePress等に渡す）
 enum MouseButton {

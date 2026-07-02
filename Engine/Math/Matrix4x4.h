@@ -1,8 +1,14 @@
 #pragma once
-#include "Vector3.h"
+#include "Engine/Math/Vector3.h"
 
 struct Matrix4x4 {
 	float m[4][4];
+
+	// 行列同士の加減乗算（実装は既存のAdd/Subtract/Multiplyを利用）
+	Matrix4x4 operator+(const Matrix4x4& rhs) const;
+	Matrix4x4 operator-(const Matrix4x4& rhs) const;
+	Matrix4x4 operator*(const Matrix4x4& rhs) const;
+	Matrix4x4& operator*=(const Matrix4x4& rhs);
 };
 
 #pragma region

@@ -11,7 +11,15 @@
 class DirectXCore {
 public:
 
+    // CPUが先行して準備できるフレーム数。
+    // 定数バッファ等の毎フレーム書き換えるリソースは、この数だけスロットを持ち、
+    // GPUが読んでいる最中のスロットへCPUが書き込まないようにする。
+    static constexpr uint32_t kFramesInFlight = 2;
+
     static DirectXCore* GetInstance();
+
+    // 現在のフレームスロット（0〜kFramesInFlight-1）。定数バッファのスロット選択に使う
+    uint32_t GetFrameIndex() const;
 
     void Initialize(HWND hwnd, int32_t width, int32_t height);
 
@@ -109,7 +117,9 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
 
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator_;
+    // フレームごとのコマンドアロケータ。
+    // GPUが前フレームを実行中でも、CPUは別のアロケータで次フレームを記録できる。
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocators_[kFramesInFlight];
 
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
 
@@ -143,6 +153,10 @@ private:
     HANDLE fenceEvent_ = nullptr;
 
     uint64_t fenceValue_ = 0;
+
+    // 各フレームスロットの描画完了を示すフェンス値。
+    // EndFrameで記録し、同じスロットを再利用する前にこの値の完了を待つ。
+    uint64_t frameFenceValues_[kFramesInFlight] = {};
 
 private:
 

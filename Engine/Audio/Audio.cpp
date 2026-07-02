@@ -1,4 +1,4 @@
-#include "Audio.h"
+#include "Engine/Audio/Audio.h"
 
 #include <cassert>
 #include <cstring>
@@ -150,7 +150,7 @@ size_t Audio::LoadWave(const std::string& filename) {
     file.close();
 
     // フォーマットが確定したので再生用ソースボイスを生成する（以後使い回す）
-    HRESULT hr = xAudio2_->CreateSourceVoice(&sound.sourceVoice, &sound.wfex);
+    [[maybe_unused]] HRESULT hr = xAudio2_->CreateSourceVoice(&sound.sourceVoice, &sound.wfex);
 
     assert(SUCCEEDED(hr));
 

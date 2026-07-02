@@ -1,8 +1,45 @@
-#include "PipelineManager.h"
+#include "Engine/Graphics/PipelineManager.h"
 #include <cassert>
-#include "log.h"
+#include "Engine/Graphics/ShaderCompiler.h"
+#include "Engine/Diagnostics/Log.h"
 
 using Microsoft::WRL::ComPtr;
+
+PipelineManager* PipelineManager::GetInstance() {
+    static PipelineManager instance;
+    return &instance;
+}
+
+void PipelineManager::Initialize(ID3D12Device* device) {
+    // 標準シェーダーをコンパイルする
+    ComPtr<IDxcBlob> vertexShader =
+        ShaderCompiler::GetInstance()->Compile(L"Shaders/Object3d.VS.hlsl", L"vs_6_0");
+    assert(vertexShader != nullptr);
+    ComPtr<IDxcBlob> pixelShader =
+        ShaderCompiler::GetInstance()->Compile(L"Shaders/Object3d.PS.hlsl", L"ps_6_0");
+    assert(pixelShader != nullptr);
+
+    // RootSignatureと用途別PSOを生成する
+    rootSignature_ = CreateRootSignature(device);
+
+    pipelines_[size_t(Pipeline::kStandard)] = CreateStandardPipeline(
+        device, rootSignature_.Get(), vertexShader.Get(), pixelShader.Get(), D3D12_CULL_MODE_BACK);
+
+    pipelines_[size_t(Pipeline::kNoCull)] = CreateStandardPipeline(
+        device, rootSignature_.Get(), vertexShader.Get(), pixelShader.Get(), D3D12_CULL_MODE_NONE);
+}
+
+void PipelineManager::Finalize() {
+    for (auto& pipeline : pipelines_) {
+        pipeline.Reset();
+    }
+    rootSignature_.Reset();
+}
+
+ID3D12PipelineState* PipelineManager::Get(Pipeline pipeline) const {
+    assert(pipeline < Pipeline::kCount);
+    return pipelines_[size_t(pipeline)].Get();
+}
 
 ComPtr<ID3D12PipelineState> PipelineManager::CreateGraphicsPipeline(const PipelineConfig& config) {
     ID3D12Device* device = config.device;
@@ -34,7 +71,7 @@ ComPtr<ID3D12PipelineState> PipelineManager::CreateGraphicsPipeline(const Pipeli
     desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
     ComPtr<ID3D12PipelineState> pso;
-    HRESULT hr = device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pso));
+    [[maybe_unused]] HRESULT hr = device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pso));
     assert(SUCCEEDED(hr));
 
     return pso;
