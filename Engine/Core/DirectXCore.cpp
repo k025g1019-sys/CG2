@@ -1,9 +1,11 @@
 #include "Engine/Core/DirectXCore.h"
 
 #include <cassert>
+#include <string>
 
 #include <d3d12sdklayers.h>
 
+#include "Engine/Diagnostics/Log.h"
 #include "Engine/Graphics/GpuResource.h"
 
 #pragma comment(lib,"d3d12.lib")
@@ -52,7 +54,10 @@ void DirectXCore::InitializeDXGIDevice() {
 
         debugController->EnableDebugLayer();
 
-        debugController->SetEnableGPUBasedValidation(TRUE);
+        // GPUベース検証は描画コマンド数に比例して非常に重く（立体視ONで顕著にFPSが落ちる）、
+        // 通常のCPU側デバッグレイヤーで大半の誤りは検出できるため既定では無効にする。
+        // GPU側の不正アクセス等を深追いするときだけTRUEに変えて使う。
+        debugController->SetEnableGPUBasedValidation(FALSE);
     }
 
 #endif
@@ -116,8 +121,11 @@ void DirectXCore::InitializeDXGIDevice() {
     {
         ComPtr<ID3D12InfoQueue> infoQueue;
         if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
-            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-            infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+            // デバッガ接続時のみエラーで停止する（未接続時は停止せず、下のコールバックでログに残る）
+            if (IsDebuggerPresent()) {
+                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+                infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+            }
             // Windows11のDXGI/DX12デバッグレイヤー相互作用バグによるエラーを抑制
             // https://stackoverflow.com/questions/69805245/directx-12-application-is-crashing-in-windows-11
             D3D12_MESSAGE_ID denyIds[] = {
@@ -130,6 +138,21 @@ void DirectXCore::InitializeDXGIDevice() {
             filter.DenyList.NumSeverities = _countof(severities);
             filter.DenyList.pSeverityList = severities;
             infoQueue->PushStorageFilter(&filter);
+        }
+
+        // デバッグレイヤーの警告以上のメッセージをログファイルにも出す
+        // （デバッガ無しで実行してもエラー内容を後から確認できるようにする）
+        ComPtr<ID3D12InfoQueue1> infoQueue1;
+        if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue1)))) {
+            DWORD callbackCookie = 0;
+            infoQueue1->RegisterMessageCallback(
+                [](D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY severity,
+                   D3D12_MESSAGE_ID, LPCSTR description, void*) {
+                    if (severity <= D3D12_MESSAGE_SEVERITY_WARNING) {
+                        Log(std::string("[D3D12] ") + description);
+                    }
+                },
+                D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &callbackCookie);
         }
     }
 #endif
@@ -525,22 +548,23 @@ void DirectXCore::EndFrame() {
     // （完了は待たない。CPUはすぐ次フレームの準備に進める）
     ++fenceValue_;
 
-    frameFenceValues_[backBufferIndex] = fenceValue_;
+    frameFenceValues_[frameIndex_] = fenceValue_;
 
     commandQueue_->Signal(
         fence_.Get(),
         fenceValue_
     );
 
-    // 次に使うフレームスロット（Presentでバックバッファが切り替わった後のindex）の
-    // 前回の描画がまだ終わっていなければ、ここで完了を待つ。
+    // 次のフレームスロットへ進み、そのスロットの前回の描画がまだ終わっていなければ完了を待つ。
     // これによりCPUはGPUよりkFramesInFlight-1フレームだけ先行できる。
-    UINT nextFrameIndex = swapChain_->GetCurrentBackBufferIndex();
+    // （スロットは自前のカウンタで管理する。バックバッファindexはResizeBuffersで
+    //   0にリセットされ、記録中のアロケータとずれるため使わない）
+    frameIndex_ = (frameIndex_ + 1) % kFramesInFlight;
 
-    if (fence_->GetCompletedValue() < frameFenceValues_[nextFrameIndex]) {
+    if (fence_->GetCompletedValue() < frameFenceValues_[frameIndex_]) {
 
         fence_->SetEventOnCompletion(
-            frameFenceValues_[nextFrameIndex],
+            frameFenceValues_[frameIndex_],
             fenceEvent_
         );
 
@@ -550,13 +574,13 @@ void DirectXCore::EndFrame() {
         );
     }
 
-    // 完了済みになった次フレーム用アロケータでコマンドリストをリセットする
-    hr = commandAllocators_[nextFrameIndex]->Reset();
+    // 完了済みになったこのスロットのアロケータでコマンドリストをリセットする
+    hr = commandAllocators_[frameIndex_]->Reset();
 
     assert(SUCCEEDED(hr));
 
     hr = commandList_->Reset(
-        commandAllocators_[nextFrameIndex].Get(),
+        commandAllocators_[frameIndex_].Get(),
         nullptr
     );
 
@@ -613,9 +637,5 @@ DirectXCore::GetCurrentRTVHandle() const {
 }
 
 uint32_t DirectXCore::GetFrameIndex() const {
-
-    // バックバッファ数とフレームインフライト数は一致している前提
-    static_assert(kFramesInFlight == kSwapChainBufferCount);
-
-    return swapChain_->GetCurrentBackBufferIndex();
+    return frameIndex_;
 }

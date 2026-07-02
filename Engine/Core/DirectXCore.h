@@ -158,6 +158,11 @@ private:
     // EndFrameで記録し、同じスロットを再利用する前にこの値の完了を待つ。
     uint64_t frameFenceValues_[kFramesInFlight] = {};
 
+    // 現在のフレームスロット（0〜kFramesInFlight-1）。EndFrameで次へ進む。
+    // バックバッファindexはResizeBuffersで0にリセットされ「記録中のアロケータ」と
+    // ずれることがあるため、スワップチェーンとは独立に自前で管理する。
+    uint32_t frameIndex_ = 0;
+
 private:
 
     D3D12_VIEWPORT viewport_{};

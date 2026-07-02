@@ -102,7 +102,7 @@ void MyGame::DrawImGui() {
 	// 立体視の方式切り替え・キャリブレーション
 	StereoRenderer::GetInstance()->DrawImGui();
 
-	// 全画面トグル（物理シート整列用）
+	// 全画面トグル（物理シート整列用）とパフォーマンス表示
 	ImGui::Begin("Display");
 	{
 		WinApp* winApp = WinApp::GetInstance();
@@ -111,6 +111,7 @@ void MyGame::DrawImGui() {
 			winApp->SetFullscreen(fullscreen);
 		}
 		ImGui::Text("Resolution: %d x %d", winApp->GetClientWidth(), winApp->GetClientHeight());
+		ImGui::Text("FPS: %.1f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
 	}
 	ImGui::End();
 

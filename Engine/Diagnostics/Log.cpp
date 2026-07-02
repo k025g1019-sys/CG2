@@ -6,10 +6,13 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <mutex>
 
 namespace {
 // InitializeLogFileで開くログファイル（開くまでは出力ウィンドウのみに出す）
 std::ofstream logStream;
+// Logは別スレッド（D3D12デバッグレイヤーのコールバック等）からも呼ばれるため排他する
+std::mutex logMutex;
 }  // namespace
 
 void InitializeLogFile() {
@@ -25,6 +28,7 @@ void InitializeLogFile() {
 }
 
 void Log(const std::string& message) {
+	std::lock_guard<std::mutex> lock(logMutex);
 	OutputDebugStringA((message + "\n").c_str());
 	if (logStream.is_open()) {
 		logStream << message << std::endl;

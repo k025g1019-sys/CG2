@@ -19,6 +19,10 @@ cbuffer CompositeParams : register(b0)
     float gLensSlant;     // 1行あたりの水平サブピクセルずれ（0=垂直レンズ）
     float gLensOffset;    // レンズ位相オフセット（サブピクセル）
     int gViewCount;       // 視点数
+    float gGhostReduction; // アナグリフのクロストーク相殺量（0..1）
+    int gAnaglyphGray;     // 0以外でグレーアナグリフ（輝度ベース。色競合が少ない）
+    float gPad0;
+    float gPad1;
 };
 
 struct VSOutput
@@ -79,6 +83,20 @@ float4 main(VSOutput input) : SV_Target
         return (cycle < 0.5f) ? left : right;
     }
 
-    // アナグリフ：左眼を赤、右眼を緑青に割り当てる
-    return float4(left.r, right.g, right.b, 1.0f);
+    // --- アナグリフ：左眼を赤、右眼を緑青に割り当てる ---
+    // 赤フィルタはシアン光（右眼像）をわずかに透過するため、視差のある部分で右眼像が
+    // ゴーストとして二重に見えやすい。右眼像の輝度に応じて赤チャンネルから差し引き、
+    // 目に届く漏れぶんを事前に相殺する（クロストーク低減。完全には消せないが大きく軽減する）。
+    const float3 kLuma = float3(0.299f, 0.587f, 0.114f);
+    float leftLuma = dot(left.rgb, kLuma);
+    float rightLuma = dot(right.rgb, kLuma);
+
+    // グレーアナグリフ：各眼を輝度で表す。左右の色差による網膜競合と
+    // 「赤チャンネルに像が無い色（青い物体など）」の見えづらさを避けられる。
+    float redSource = (gAnaglyphGray != 0) ? leftLuma : left.r;
+    float greenSource = (gAnaglyphGray != 0) ? rightLuma : right.g;
+    float blueSource = (gAnaglyphGray != 0) ? rightLuma : right.b;
+
+    float red = saturate(redSource - gGhostReduction * rightLuma);
+    return float4(red, greenSource, blueSource, 1.0f);
 }

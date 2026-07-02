@@ -92,7 +92,7 @@ private:
     // ビュー用ターゲットの色フォーマット（既存の描画PSOに合わせてsRGB）
     static const DXGI_FORMAT kColorFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
-    // 合成PSへ渡すパラメータ（HLSLのcbufferと一致させる。16バイト×2）
+    // 合成PSへ渡すパラメータ（HLSLのcbufferと一致させる。16バイト×3）
     struct CompositeParams {
         int32_t mode = 0;
         float barrierPitch = 2.0f;
@@ -102,6 +102,10 @@ private:
         float lensSlant = 0.0f;   // 1行あたりの水平サブピクセルずれ（0=垂直レンズ）
         float lensOffset = 0.0f;  // 位相オフセット（サブピクセル）
         int32_t viewCount = 2;    // 描画済みの視点数（Compositeで毎フレーム設定する）
+        float ghostReduction = 0.15f;  // アナグリフのクロストーク相殺量（0..1）
+        int32_t anaglyphGray = 0;      // 0以外でグレーアナグリフ（輝度ベース）
+        float pad0 = 0.0f;
+        float pad1 = 0.0f;
     };
 
     // 現在の視点数ぶんのオフスクリーンが無ければ作る（遅延確保。増える方向のみ）
@@ -151,4 +155,6 @@ private:
     float lensPitch_ = 8.0f;
     float lensSlant_ = 0.0f;
     float lensOffset_ = 0.0f;
+    float ghostReduction_ = 0.15f;  // アナグリフのクロストーク相殺量（メガネに合わせて調整）
+    bool anaglyphGray_ = false;     // グレーアナグリフ（色競合・ゴーストがさらに気になる場合に）
 };

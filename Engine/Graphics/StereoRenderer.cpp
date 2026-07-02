@@ -341,6 +341,8 @@ void StereoRenderer::Composite(
     params.lensSlant = lensSlant_;
     params.lensOffset = lensOffset_;
     params.viewCount = static_cast<int32_t>(viewCount);
+    params.ghostReduction = ghostReduction_;
+    params.anaglyphGray = anaglyphGray_ ? 1 : 0;
 
     uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
     paramsCB_.Write(frameIndex, params);
@@ -409,9 +411,21 @@ void StereoRenderer::DrawImGui() {
         ImGui::DragFloat("Offset (subpx)", &lensOffset_, 0.02f, -64.0f, 64.0f, "%.3f");
         ImGui::TextWrapped(
             "Place the lenticular sheet over the screen, then tune Lens Pitch (slant=0 for vertical lenses) until a clean 3D image appears. To test without a sheet, set a large Lens Pitch to see the views cycle across wide bands. Use Swap Eyes if depth is inverted.");
+    } else if (mode_ == DisplayMode::kAnaglyph) {
+        ImGui::Separator();
+        ImGui::Text("Anaglyph Ghost Reduction");
+        // 赤フィルタから右眼像（シアン）が漏れて二重に見えるのを軽減する。
+        // メガネを掛けた状態で、赤側のゴーストが目立たなくなるまで上げる。
+        ImGui::SliderFloat("Ghost Reduction", &ghostReduction_, 0.0f, 0.5f, "%.2f");
+        ImGui::Checkbox("Gray Anaglyph (no color)", &anaglyphGray_);
+        ImGui::TextWrapped(
+            "Anaglyph: red/cyan glasses (red = left). If objects look doubled through the RED lens, "
+            "raise Ghost Reduction (cancels cyan light leaking through the red filter), "
+            "and set Convergence (Camera window) to the distance of your subject. "
+            "Gray Anaglyph further reduces ghosting and color rivalry.");
     } else {
         ImGui::TextWrapped(
-            "Anaglyph: red/cyan glasses (red = left). Left/Right eye only: switch to confirm the two viewpoints differ (no glasses needed).");
+            "Left/Right eye only: switch to confirm the two viewpoints differ (no glasses needed).");
     }
 
     ImGui::End();
