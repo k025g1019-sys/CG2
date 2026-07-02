@@ -123,6 +123,9 @@
     <ClCompile Include="Engine\Geometry\LoadObjFile.cpp">
       <Filter>Engine\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Graphics\CameraCapture.cpp">
+      <Filter>Engine\Graphics</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
@@ -135,8 +138,17 @@
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Graphics\StereoRenderer.cpp">
+      <Filter>Engine\Graphics</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Graphics\TextureManager.cpp">
       <Filter>Engine\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\EyeTracker.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\FaceTracker.cpp">
+      <Filter>Engine\Input</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Input\Input.cpp">
       <Filter>Engine\Input</Filter>
@@ -227,6 +239,9 @@
     <ClInclude Include="Engine\Geometry\LoadObjFile.h">
       <Filter>Engine\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Graphics\CameraCapture.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
     <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
@@ -239,8 +254,20 @@
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Graphics\StereoRenderer.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
     <ClInclude Include="Engine\Graphics\TextureManager.h">
       <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\EyeTracker.h">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\FaceTracker.h">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\GazePacket.h">
+      <Filter>Engine\Input</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Input\Input.h">
       <Filter>Engine\Input</Filter>
@@ -318,6 +345,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Object3d.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Fullscreen.VS.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Composite.PS.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\CameraBlit.PS.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

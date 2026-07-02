@@ -109,11 +109,15 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp" />
     <ClCompile Include="Engine\Geometry\LoadObjFile.cpp" />
+    <ClCompile Include="Engine\Graphics\CameraCapture.cpp" />
     <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp" />
     <ClCompile Include="Engine\Graphics\GpuResource.cpp" />
     <ClCompile Include="Engine\Graphics\PipelineManager.cpp" />
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
+    <ClCompile Include="Engine\Graphics\StereoRenderer.cpp" />
     <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
+    <ClCompile Include="Engine\Input\EyeTracker.cpp" />
+    <ClCompile Include="Engine\Input\FaceTracker.cpp" />
     <ClCompile Include="Engine\Input\Input.cpp" />
     <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
     <ClCompile Include="Game\Object\Skydome.cpp" />
@@ -161,11 +165,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Geometry\GeometryGenerator.h" />
     <ClInclude Include="Engine\Geometry\LoadObjFile.h" />
+    <ClInclude Include="Engine\Graphics\CameraCapture.h" />
     <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h" />
     <ClInclude Include="Engine\Graphics\GpuResource.h" />
     <ClInclude Include="Engine\Graphics\PipelineManager.h" />
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
+    <ClInclude Include="Engine\Graphics\StereoRenderer.h" />
     <ClInclude Include="Engine\Graphics\TextureManager.h" />
+    <ClInclude Include="Engine\Input\EyeTracker.h" />
+    <ClInclude Include="Engine\Input\FaceTracker.h" />
+    <ClInclude Include="Engine\Input\GazePacket.h" />
     <ClInclude Include="Engine\Input\Input.h" />
     <ClInclude Include="Engine\Light\DirectionalLight.h" />
     <ClInclude Include="Engine\Math\Matrix4x4.h" />
@@ -210,6 +219,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Object3d.hlsli" />
+    <None Include="Shaders\Fullscreen.VS.hlsl" />
+    <None Include="Shaders\Composite.PS.hlsl" />
+    <None Include="Shaders\CameraBlit.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Object3d.PS.hlsl">

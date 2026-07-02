@@ -21,13 +21,13 @@ void Object3D::Initialize(ID3D12Device* device, Mesh* mesh, uint32_t textureHand
 	materialCB_.Create(device, DirectXCore::kFramesInFlight);
 }
 
-void Object3D::Update(const Matrix4x4& view, const Matrix4x4& projection, const Frustum3D& frustum) {
+void Object3D::Update(const Frustum3D& frustum) {
 	// 視錐台カリング判定（Outsideの場合はDrawで描画をスキップする）
 	visibility_ = ClassifyFrustum(frustum, CalcWorldBoundingSphere());
 
-	// 行列を計算して定数バッファへ書き込む
+	// ワールド行列を計算して定数バッファへ書き込む
 	Matrix4x4 world = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
-	TransformationMatrix transformData{ world * view * projection, world };
+	TransformationMatrix transformData{ world };
 
 	uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
 	transformCB_.Write(frameIndex, transformData);

@@ -89,8 +89,8 @@ ComPtr<ID3D12RootSignature> PipelineManager::CreateRootSignature(ID3D12Device* d
     descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
     descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
-    // RootParameter（0:Material[PS] / 1:Transform[VS] / 2:Light[PS] / 3:Texture[PS]）
-    D3D12_ROOT_PARAMETER rootParameters[4] = {};
+    // RootParameter（0:Material[PS] / 1:World[VS] / 2:Light[PS] / 3:Texture[PS] / 4:ViewProjection[VS]）
+    D3D12_ROOT_PARAMETER rootParameters[5] = {};
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[0].Descriptor.ShaderRegister = 0;
@@ -107,6 +107,11 @@ ComPtr<ID3D12RootSignature> PipelineManager::CreateRootSignature(ID3D12Device* d
     rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRange;
     rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+
+    // 視点ごとのビュー射影（b1, VS）。立体視で視点ごとに差し替える。
+    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[4].Descriptor.ShaderRegister = 1;
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

@@ -26,18 +26,18 @@ void Skydome::Initialize(ID3D12Device* device) {
 	transformCB_.Create(device, DirectXCore::kFramesInFlight);
 }
 
-void Skydome::Update(const Matrix4x4& view, const Matrix4x4& projection) {
+void Skydome::Update(const Matrix4x4& centerView) {
 	// カメラ追従ON時は中心をカメラのワールド位置へ合わせ、どこへ動いても境界が見えないようにする。
 	// ビュー行列の逆行列がカメラのワールド行列なので、その原点を変換して位置を得る。
 	Vector3 center = position_;
 	if (followCamera_) {
-		Matrix4x4 cameraWorld = Inverse(view);
+		Matrix4x4 cameraWorld = Inverse(centerView);
 		Vector3 origin{ 0.0f, 0.0f, 0.0f };
 		center = Transform(origin, cameraWorld);
 	}
 
 	Matrix4x4 world = MakeAffineMatrix({ scale_, scale_, scale_ }, { 0.0f, 0.0f, 0.0f }, center);
-	TransformationMatrix transformData{ world * view * projection, world };
+	TransformationMatrix transformData{ world };
 
 	uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
 	transformCB_.Write(frameIndex, transformData);

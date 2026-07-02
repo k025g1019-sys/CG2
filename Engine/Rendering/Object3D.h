@@ -25,11 +25,12 @@ public:
     /// <param name="enableLighting">平行光源によるライティングを行うか</param>
     void Initialize(ID3D12Device* device, Mesh* mesh, uint32_t textureHandle, bool enableLighting = true);
 
-    // 行列計算・定数バッファ更新・視錐台カリング判定（毎フレーム呼ぶ）
-    void Update(const Matrix4x4& view, const Matrix4x4& projection, const Frustum3D& frustum);
+    // ワールド行列・マテリアルの定数バッファ更新と視錐台カリング判定（毎フレーム呼ぶ）。
+    // ビュー射影は視点ごとの共有CBuffer（VSのb1）で供給されるため、ここでは扱わない。
+    void Update(const Frustum3D& frustum);
 
     // カリング結果がOutsideでなければ描画する
-    // （RootSignature・PSO・トポロジ・ライトCBVは呼び出し側で設定済みの前提）
+    // （RootSignature・PSO・トポロジ・ライトCBV・ビュー射影CBVは呼び出し側で設定済みの前提）
     void Draw(ID3D12GraphicsCommandList* commandList) const;
 
     // 現在のTransformとメッシュから、ワールド空間のバウンディング球を計算する（ピッキング用）

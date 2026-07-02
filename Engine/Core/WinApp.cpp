@@ -83,6 +83,50 @@ void WinApp::Initialize() {
     ShowWindow(hwnd_, SW_SHOW);
 }
 
+void WinApp::SetFullscreen(bool enable) {
+    if (enable == fullscreen_) {
+        return;
+    }
+
+    if (enable) {
+        // 現在のスタイルとウィンドウ矩形を保存（復帰用）
+        savedStyle_ = GetWindowLongPtrW(hwnd_, GWL_STYLE);
+        savedExStyle_ = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
+        GetWindowRect(hwnd_, &savedWindowRect_);
+
+        // ウィンドウが乗っているモニタの矩形を取得
+        HMONITOR monitor = MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo{};
+        monitorInfo.cbSize = static_cast<DWORD>(sizeof(monitorInfo));
+        GetMonitorInfoW(monitor, &monitorInfo);
+
+        // 枠・タイトルバーを外し（WS_POPUP相当）、モニタ全体を覆う
+        SetWindowLongPtrW(hwnd_, GWL_STYLE, savedStyle_ & ~static_cast<LONG_PTR>(WS_OVERLAPPEDWINDOW));
+        SetWindowPos(
+            hwnd_, HWND_TOP,
+            monitorInfo.rcMonitor.left,
+            monitorInfo.rcMonitor.top,
+            monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+            monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+        fullscreen_ = true;
+    } else {
+        // 元のスタイル・位置へ戻す
+        SetWindowLongPtrW(hwnd_, GWL_STYLE, savedStyle_);
+        SetWindowLongPtrW(hwnd_, GWL_EXSTYLE, savedExStyle_);
+        SetWindowPos(
+            hwnd_, HWND_NOTOPMOST,
+            savedWindowRect_.left,
+            savedWindowRect_.top,
+            savedWindowRect_.right - savedWindowRect_.left,
+            savedWindowRect_.bottom - savedWindowRect_.top,
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+        fullscreen_ = false;
+    }
+}
+
 bool WinApp::ProcessMessage() {
 
     MSG msg{};

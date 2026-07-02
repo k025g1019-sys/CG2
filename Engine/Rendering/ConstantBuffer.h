@@ -41,6 +41,14 @@ public:
         return resource_->GetGPUVirtualAddress() + UINT64(slot) * slotSize_;
     }
 
+    // リソースを明示的に解放する。
+    // （静的シングルトンのメンバとして持つ場合、リークチェックより前に解放するために呼ぶ）
+    void Reset() {
+        resource_.Reset();
+        mapped_ = nullptr;
+        slotCount_ = 0;
+    }
+
 private:
 
     Microsoft::WRL::ComPtr<ID3D12Resource> resource_;

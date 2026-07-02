@@ -32,13 +32,14 @@ void Sprite::Initialize(ID3D12Device* device, uint32_t textureHandle, const Vect
 
 	transformCB_.Create(device, DirectXCore::kFramesInFlight);
 	materialCB_.Create(device, DirectXCore::kFramesInFlight);
+	viewProjectionCB_.Create(device, DirectXCore::kFramesInFlight);
 }
 
 void Sprite::Update(float screenWidth, float screenHeight) {
-	// 正射影（画面左上原点）でWVPを計算する
+	// ワールド行列と正射影（画面左上原点）を計算する
 	Matrix4x4 world = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 	Matrix4x4 projection = MakeOrthographicMatrix(0.0f, 0.0f, screenWidth, screenHeight, 0.0f, 100.0f);
-	TransformationMatrix transformData{ world * projection, world };
+	TransformationMatrix transformData{ world };
 
 	// UV変換行列
 	Matrix4x4 uvTransformMatrix = MakeScaleMatrix(uvTransform_.scale);
@@ -49,6 +50,7 @@ void Sprite::Update(float screenWidth, float screenHeight) {
 	uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
 	transformCB_.Write(frameIndex, transformData);
 	materialCB_.Write(frameIndex, material_);
+	viewProjectionCB_.Write(frameIndex, projection);
 
 	// --- 2D視錐台カリング（可視範囲は画面矩形）---
 	// 4頂点をワールド変換してスクリーン空間のAABBを作り、画面矩形と判定する
@@ -81,6 +83,8 @@ void Sprite::Draw(ID3D12GraphicsCommandList* commandList) const {
 	commandList->SetGraphicsRootConstantBufferView(0, materialCB_.GetGPUAddress(frameIndex));
 	commandList->SetGraphicsRootConstantBufferView(1, transformCB_.GetGPUAddress(frameIndex));
 	commandList->SetGraphicsRootDescriptorTable(3, TextureManager::GetInstance()->GetSrvHandleGPU(textureHandle_));
+	// 2Dなのでビュー射影を自前の正射影へ差し替える（3D側は次の視点描画で再バインドされる）
+	commandList->SetGraphicsRootConstantBufferView(4, viewProjectionCB_.GetGPUAddress(frameIndex));
 
 	mesh_.Draw(commandList);
 }

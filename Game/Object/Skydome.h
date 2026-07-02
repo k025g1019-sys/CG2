@@ -26,12 +26,15 @@ public:
     void Initialize(ID3D12Device* device);
 
     /// <summary>
-    /// カメラのビュー行列から追従位置を決め、WVPを更新する。毎フレーム1回呼ぶ。
+    /// カメラのビュー行列から追従位置を決め、ワールド行列を更新する。毎フレーム1回呼ぶ。
+    /// ビュー射影は視点ごとの共有CBuffer（VSのb1）で供給するため、ここでは扱わない
+    /// （立体視では左右の眼で位置がわずかに違うが、天球は十分大きく視差が無視できるため中心カメラで決める）。
     /// </summary>
-    void Update(const Matrix4x4& view, const Matrix4x4& projection);
+    void Update(const Matrix4x4& centerView);
 
     /// <summary>
     /// カリング無効PSOに切り替えて天球を描画する（背景なので他オブジェクトより先に呼ぶ）。
+    /// ビュー射影CBV（b1[VS]）は呼び出し側で設定済みの前提。
     /// </summary>
     /// <param name="lightAddress">共通ルートシグネチャが要求するため設定する平行光源のCBVアドレス（ライティングは無効）</param>
     void Draw(

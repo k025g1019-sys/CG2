@@ -23,10 +23,12 @@ public:
     /// <param name="size">スプライトのサイズ（ピクセル）</param>
     void Initialize(ID3D12Device* device, uint32_t textureHandle, const Vector2& size);
 
-    // 正射影行列でWVPを計算し、画面矩形との2Dカリングを判定する（毎フレーム呼ぶ）
+    // ワールド行列・正射影・マテリアルの定数バッファ更新と、画面矩形との2Dカリング判定（毎フレーム呼ぶ）
     void Update(float screenWidth, float screenHeight);
 
-    // カリング結果がOutsideでなければ描画する
+    // カリング結果がOutsideでなければ描画する。
+    // 2Dオーバーレイなので、ビュー射影（VSのb1）は自前の正射影へ差し替えて描く
+    // （立体視でも両眼で同一＝視差ゼロで表示される）。
     // （RootSignature・PSO・トポロジは呼び出し側で設定済みの前提）
     void Draw(ID3D12GraphicsCommandList* commandList) const;
 
@@ -60,6 +62,9 @@ private:
     ConstantBuffer<TransformationMatrix> transformCB_;
 
     ConstantBuffer<Material> materialCB_;
+
+    // スプライト用の正射影（視点非依存。VSのb1へ自前でバインドする）
+    ConstantBuffer<Matrix4x4> viewProjectionCB_;
 
     // Updateで判定した2Dカリング結果（Drawで参照する）
     FrustumVisibility visibility_ = FrustumVisibility::Inside;

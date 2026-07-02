@@ -7,6 +7,7 @@
 #include "Engine/Core/DirectXCore.h"
 #include "Engine/Core/WinApp.h"
 #include "Engine/Graphics/PipelineManager.h"
+#include "Engine/Graphics/StereoRenderer.h"
 #include "Engine/Graphics/TextureManager.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Math/Matrix4x4.h"
@@ -61,6 +62,9 @@ void GameScene::Initialize() {
 	// --- 平行光源 ---
 	lightCB_.Create(device, DirectXCore::kFramesInFlight);
 
+	// --- 立体視：視点ごとのビュー射影CBuffer（フレームスロット×最大視点数）---
+	viewProjectionCB_.Create(device, DirectXCore::kFramesInFlight * StereoRenderer::kMaxViewCount);
+
 	// --- カメラ初期位置 ---
 	camera_.GetTransform().rotate = { 0.04f, 0.0f, 0.0f };
 	camera_.GetTransform().translate = { 0.0f, 1.7f, -10.0f };
@@ -80,11 +84,13 @@ void GameScene::Update() {
 	triangle_.GetTransform().rotate.y += 0.04f;
 	sphere_.GetTransform().rotate.y += 0.02f;
 
-	// 現在のウィンドウサイズを使う（リサイズに追従させ、アスペクト比の歪みを防ぐ）
+	// 現在のウィンドウサイズを使う（リサイズに追従させ、アスペクト比の歪みを防ぐ）。
+	// renderAspectScale_でゲームの表示先の横割合に合わせる
+	// （左右分割でゲームが左半分のとき=0.5。これを掛けないと縦に引き伸ばされて見える）。
 	const float width = float(WinApp::GetInstance()->GetClientWidth());
 	const float height = float(WinApp::GetInstance()->GetClientHeight());
 
-	Matrix4x4 projection = camera_.GetProjectionMatrix(width / height);
+	Matrix4x4 projection = camera_.GetProjectionMatrix((width * renderAspectScale_) / height);
 	Matrix4x4 view = camera_.GetViewMatrix();
 
 #ifndef NDEBUG
@@ -109,20 +115,67 @@ void GameScene::Update() {
 	}
 #endif  // !NDEBUG
 
-	// --- 各オブジェクトの更新（行列計算・定数バッファ書き込み・視錐台カリング）---
+	// --- 各オブジェクトの更新（ワールド行列・定数バッファ書き込み・視錐台カリング）---
+	// カリングは中心カメラの視錐台で判定する（視点間のずれは眼間距離程度で無視できる）。
 	Frustum3D frustum = MakeFrustumFromViewProjection(view * projection);
-	triangle_.Update(view, projection, frustum);
-	sphere_.Update(view, projection, frustum);
-	obj_.Update(view, projection, frustum);
+	triangle_.Update(frustum);
+	sphere_.Update(frustum);
+	obj_.Update(frustum);
 
 	// 天球（カメラ追従ON時は中心がカメラ位置へ追従する）
-	skydome_.Update(view, projection);
+	skydome_.Update(view);
 
 	// スプライト（正射影・2Dカリング）
 	sprite_.Update(width, height);
 
 	// 平行光源
-	lightCB_.Write(DirectXCore::GetInstance()->GetFrameIndex(), light_);
+	const uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
+	lightCB_.Write(frameIndex, light_);
+
+	// --- 立体視：中心カメラから各視点（眼）を作り、視点ごとのビュー射影を更新する ---
+	// カメラは平行配置（toe-in不使用）。収束面で視差ゼロになるよう射影にシアーを加える（オフアクシス射影）。
+	Matrix4x4 centerWorld = Inverse(view);
+	Vector3 cameraRight = Normalize({ centerWorld.m[0][0], centerWorld.m[0][1], centerWorld.m[0][2] });
+	Vector3 cameraUp = Normalize({ centerWorld.m[1][0], centerWorld.m[1][1], centerWorld.m[1][2] });
+	Vector3 cameraPos = { centerWorld.m[3][0], centerWorld.m[3][1], centerWorld.m[3][2] };
+	float xScale = projection.m[0][0];
+	float yScale = projection.m[1][1];
+
+	// 視線追跡による頭位置オフセット（カメラ右方向hx・上方向hy）。
+	// 視点オフセットeと同じ仕組み（平行移動＋射影シアー）に乗せるため、収束面では視差ゼロのまま、
+	// 物体だけが運動視差で角度を変えて見える（窓越しに覗き込む効果）。立体視OFF（1視点）でも効く。
+	float hx = 0.0f;
+	float hy = 0.0f;
+	if (eyeTrackingEnabled_) {
+		hx = gazeX_ * gazeMoveScaleX_;
+		hy = gazeY_ * gazeMoveScaleY_;
+	}
+
+	const uint32_t viewCount = StereoRenderer::GetInstance()->GetActiveViewCount();
+	for (uint32_t v = 0; v < viewCount; ++v) {
+		// 視点オフセットe：視点0=左(-)、最終視点=右(+)。2視点なら -sep/2, +sep/2。1視点（Off）なら中央。
+		float e = 0.0f;
+		if (viewCount >= 2) {
+			float t = float(v) / float(viewCount - 1);  // 0..1
+			e = (t - 0.5f) * eyeSeparation_;
+		}
+		// 水平オフセットは「眼の分離e」と「頭の左右移動hx」の合算。
+		float ox = e + hx;
+		// 眼の位置は中心から右方向へox、上方向へhy。向きは中心と同じ（平行配置）。
+		Matrix4x4 eyeWorld = centerWorld;
+		eyeWorld.m[3][0] = cameraPos.x + cameraRight.x * ox + cameraUp.x * hy;
+		eyeWorld.m[3][1] = cameraPos.y + cameraRight.y * ox + cameraUp.y * hy;
+		eyeWorld.m[3][2] = cameraPos.z + cameraRight.z * ox + cameraUp.z * hy;
+		Matrix4x4 eyeView = Inverse(eyeWorld);
+
+		// オフアクシス射影：水平シアーm[2][0]・垂直シアーm[2][1]を設定し、収束面で像を一致させる。
+		Matrix4x4 eyeProjection = projection;
+		eyeProjection.m[2][0] = xScale * ox / convergence_;
+		eyeProjection.m[2][1] = yScale * hy / convergence_;
+
+		viewProjectionCB_.Write(
+			frameIndex * StereoRenderer::kMaxViewCount + v, eyeView * eyeProjection);
+	}
 }
 
 #ifdef USE_IMGUI
@@ -277,6 +330,22 @@ void GameScene::DrawImGui() {
 
 	ImGui::Separator();
 
+	// 立体視の共有パラメータ（視点描画に効く）
+	ImGui::Text("Stereoscopic (view)");
+	ImGui::DragFloat("Eye Separation", &eyeSeparation_, 0.005f, 0.0f, 5.0f);
+	ImGui::DragFloat("Convergence", &convergence_, 0.1f, 0.1f, 100.0f);
+
+	ImGui::Separator();
+
+	// 視線追跡による頭連動オフアクシスの強さ（視線ON/OFFは"Eye Tracking & Camera"のチェックボックス）
+	ImGui::Text("Eye Tracking (head-coupled off-axis)");
+	ImGui::Text("Status: %s", eyeTrackingEnabled_ ? "ON (tracking)" : "OFF");
+	ImGui::DragFloat("Gaze Move X", &gazeMoveScaleX_, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Gaze Move Y", &gazeMoveScaleY_, 0.01f, 0.0f, 10.0f);
+	ImGui::Text("Gaze: (%.2f, %.2f)", gazeX_, gazeY_);
+
+	ImGui::Separator();
+
 	ImGui::ColorEdit4("Light Color", &light_.color.x);
 	ImGui::DragFloat3("Light Direction", &light_.direction.x, 0.01f);
 	ImGui::DragFloat("Intensity", &light_.intensity, 0.01f, 0.0f, 10.0f);
@@ -320,11 +389,16 @@ void GameScene::DrawImGui() {
 }
 #endif
 
-void GameScene::Draw(ID3D12GraphicsCommandList* commandList) {
+void GameScene::Draw(ID3D12GraphicsCommandList* commandList, uint32_t viewIndex) {
 	uint32_t frameIndex = DirectXCore::GetInstance()->GetFrameIndex();
 
-	// --- 共通設定（Viewport/Scissor/RenderTarget/DescriptorHeapはDirectXCore::BeginFrameで設定済み）---
+	// --- 共通設定（Viewport/Scissor/RenderTarget/DescriptorHeapは
+	//     DirectXCore::BeginFrameまたはStereoRenderer::BeginViewで設定済み）---
 	commandList->SetGraphicsRootSignature(PipelineManager::GetInstance()->GetRootSignature());
+
+	// この視点のビュー射影をVS(b1)へバインド（以降の3D描画で共有。スプライトのみ自前の正射影へ差し替える）
+	commandList->SetGraphicsRootConstantBufferView(
+		4, viewProjectionCB_.GetGPUAddress(frameIndex * StereoRenderer::kMaxViewCount + viewIndex));
 
 	// --- 天球を最初に描画（背景。カリング無効PSOに切り替わる）---
 	skydome_.Draw(commandList, lightCB_.GetGPUAddress(frameIndex));
