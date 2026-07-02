@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "Vector3.h"
-#include "Matrix4x4.h"
+#include "Engine/Math/Vector3.h"
+#include "Engine/Math/Matrix4x4.h"
 
 /// <summary>
 /// マウス操作で対象を見回す開発用カメラ（ターンテーブル方式のオービット）。

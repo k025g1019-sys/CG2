@@ -4,7 +4,35 @@
 #include <wrl.h>
 #include <dxcapi.h>
 
+/// <summary>
+/// RootSignatureと用途別PSOを一括生成・所有するレジストリ。
+/// 描画側はGet(Pipeline::～)でPSOを取得するだけでよく、
+/// シェーダーコンパイルやPSO生成の詳細を知る必要がない。
+/// </summary>
 class PipelineManager {
+public:
+
+    // 用途別のPSO（Initializeで一括生成する）
+    enum class Pipeline {
+        kStandard,  // 裏面カリング（通常の3Dオブジェクト・スプライト）
+        kNoCull,    // カリング無効（内側から見る天球など）
+
+        kCount,     // PSOの総数（enumの末尾に置くこと）
+    };
+
+    static PipelineManager* GetInstance();
+
+    // 標準シェーダーをコンパイルし、RootSignatureと全PSOを生成する
+    // （ShaderCompiler::Initializeの後に呼ぶ）
+    void Initialize(ID3D12Device* device);
+
+    // 全PSOとRootSignatureを解放する（リソースリークチェックより前に呼ぶ）
+    void Finalize();
+
+    ID3D12RootSignature* GetRootSignature() const { return rootSignature_.Get(); }
+
+    ID3D12PipelineState* Get(Pipeline pipeline) const;
+
 public:
 
     struct PipelineConfig {
@@ -35,4 +63,20 @@ public:
         IDxcBlob* vertexShader,
         IDxcBlob* pixelShader,
         D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK);
+
+private:
+
+    PipelineManager() = default;
+
+    ~PipelineManager() = default;
+
+    PipelineManager(const PipelineManager&) = delete;
+
+    PipelineManager& operator=(const PipelineManager&) = delete;
+
+private:
+
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelines_[size_t(Pipeline::kCount)];
 };

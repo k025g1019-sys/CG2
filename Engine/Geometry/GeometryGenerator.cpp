@@ -1,21 +1,14 @@
-#include "GeometryGenerator.h"
-#include "VertexData.h"
-#include <Vector3.h>
-#include <cmath>
-#include <vector>
+#include "Engine/Geometry/GeometryGenerator.h"
 
-#pragma region 球を生成する
-void GenerateSphere(
-	uint32_t subdivision,
-	ID3D12Resource* vertexResourceSphere,
-	D3D12_VERTEX_BUFFER_VIEW& vertexBufferViewSphere,
-	uint32_t sphereVertexCount) {
+#include <cmath>
+
+#include "Engine/Math/Vector3.h"
+
+std::vector<VertexData> GenerateSphereVertices(uint32_t subdivision) {
 	const float pi = 3.1415926535f;
 
-	sphereVertexCount = subdivision * subdivision * 6;
-
 	std::vector<VertexData> vertices;
-	vertices.resize(sphereVertexCount);
+	vertices.resize(size_t(subdivision) * subdivision * 6);
 
 	const float kLonEvery = 2.0f * pi / subdivision;
 	const float kLatEvery = pi / subdivision;
@@ -43,19 +36,19 @@ void GenerateSphere(
 			vertices[start + 4].position = { v1.x, v1.y, v1.z, 1.0f };
 			vertices[start + 5].position = { v3.x, v3.y, v3.z, 1.0f };
 
-			// 法線を設定
-			vertices[start + 0].normal = { v0.x, v0.y, v0.z };
-			vertices[start + 1].normal = { v1.x, v1.y, v1.z };
-			vertices[start + 2].normal = { v2.x, v2.y, v2.z };
+			// 半径1の球なので、頂点位置がそのまま法線になる
+			vertices[start + 0].normal = v0;
+			vertices[start + 1].normal = v1;
+			vertices[start + 2].normal = v2;
 
-			vertices[start + 3].normal = { v2.x, v2.y, v2.z };
-			vertices[start + 4].normal = { v1.x, v1.y, v1.z };
-			vertices[start + 5].normal = { v3.x, v3.y, v3.z };
+			vertices[start + 3].normal = v2;
+			vertices[start + 4].normal = v1;
+			vertices[start + 5].normal = v3;
 
-			float u0 = (float)lonIndex / subdivision;
-			float u1 = (float)(lonIndex + 1) / subdivision;
-			float v0_uv = 1.0f - (float)latIndex / subdivision;
-			float v1_uv = 1.0f - (float)(latIndex + 1) / subdivision;
+			float u0 = float(lonIndex) / subdivision;
+			float u1 = float(lonIndex + 1) / subdivision;
+			float v0_uv = 1.0f - float(latIndex) / subdivision;
+			float v1_uv = 1.0f - float(latIndex + 1) / subdivision;
 
 			vertices[start + 0].texcoord = { u0, v0_uv };
 			vertices[start + 1].texcoord = { u0, v1_uv };
@@ -67,12 +60,5 @@ void GenerateSphere(
 		}
 	}
 
-	VertexData* vertexData = nullptr;
-	vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
-	vertexBufferViewSphere.SizeInBytes = sizeof(VertexData) * sphereVertexCount;
-	vertexBufferViewSphere.StrideInBytes = sizeof(VertexData);
-
-	vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	std::memcpy(vertexData, vertices.data(), sizeof(VertexData) * sphereVertexCount);
+	return vertices;
 }
-#pragma endregion

@@ -1,4 +1,4 @@
-#include "DebugCamera.h"
+#include "Engine/Camera/DebugCamera.h"
 
 #include <cfloat>
 #include <cmath>

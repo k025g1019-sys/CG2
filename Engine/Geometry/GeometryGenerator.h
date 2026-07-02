@@ -1,11 +1,9 @@
 #pragma once
 
-#include <d3d12.h>
 #include <cstdint>
+#include <vector>
 
-void GenerateSphere(
-    uint32_t subdivision,
-    ID3D12Resource* vertexResource,
-    D3D12_VERTEX_BUFFER_VIEW& vertexBufferView,
-    uint32_t sphereVertexCount
-);
+#include "Engine/Rendering/VertexData.h"
+
+// 緯度経度分割の球（半径1・原点中心）の頂点列を生成する
+std::vector<VertexData> GenerateSphereVertices(uint32_t subdivision);

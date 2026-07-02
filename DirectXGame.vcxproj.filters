@@ -25,7 +25,7 @@
     <Filter Include="Engine\Camera">
       <UniqueIdentifier>{b2d8c4e1-3a7f-4d92-9e1b-6c5a2f8d4e10}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Collision">
+    <Filter Include="Engine\Culling">
       <UniqueIdentifier>{d3e4f5a6-b7c8-4d90-9e12-3a4b5c6d7e80}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Core">
@@ -46,14 +46,17 @@
     <Filter Include="Engine\Math">
       <UniqueIdentifier>{e77abfb1-4f23-4f2b-8451-135569cd3fcb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Object">
+    <Filter Include="Game\Object">
       <UniqueIdentifier>{f1a2b3c4-d5e6-4f70-8a91-2b3c4d5e6f70}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Rendering">
       <UniqueIdentifier>{00276162-2f6f-4552-acfe-de4c0df07565}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Utility">
+    <Filter Include="Engine\Diagnostics">
       <UniqueIdentifier>{4ecbf953-2193-4bef-afde-4ba610d7fa28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\String">
+      <UniqueIdentifier>{6d1f4c82-3b9e-47a5-9c08-e2d5a7f31b64}</UniqueIdentifier>
     </Filter>
     <Filter Include="Game">
       <UniqueIdentifier>{a5f2df8f-4c0d-464e-9617-5b19a9b6c47f}</UniqueIdentifier>
@@ -93,13 +96,22 @@
     <ClCompile Include="Engine\Audio\Audio.cpp">
       <Filter>Engine\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Camera\Camera.cpp">
+      <Filter>Engine\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Camera\DebugCamera.cpp">
       <Filter>Engine\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Collision\FrustumCulling.cpp">
-      <Filter>Engine\Collision</Filter>
+    <ClCompile Include="Engine\Culling\FrustumCulling.cpp">
+      <Filter>Engine\Culling</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\DirectXCore.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Framework.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\ImGuiManager.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\WinApp.cpp">
@@ -132,20 +144,29 @@
     <ClCompile Include="Engine\Math\Matrix4x4.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Object\Skydome.cpp">
-      <Filter>Engine\Object</Filter>
+    <ClCompile Include="Game\Object\Skydome.cpp">
+      <Filter>Game\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Rendering\RenderResource.cpp">
+    <ClCompile Include="Engine\Rendering\Mesh.cpp">
       <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Utility\ConvertString.cpp">
-      <Filter>Engine\Utility</Filter>
+    <ClCompile Include="Engine\Rendering\Object3D.cpp">
+      <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Utility\CrashHandle.cpp">
-      <Filter>Engine\Utility</Filter>
+    <ClCompile Include="Engine\Rendering\Sprite.cpp">
+      <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Utility\Log.cpp">
-      <Filter>Engine\Utility</Filter>
+    <ClCompile Include="Engine\String\ConvertString.cpp">
+      <Filter>Engine\String</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Diagnostics\CrashHandler.cpp">
+      <Filter>Engine\Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Diagnostics\Log.cpp">
+      <Filter>Engine\Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\MyGame.cpp">
+      <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Game\Scene\GameScene.cpp">
       <Filter>Game\Scene</Filter>
@@ -179,13 +200,22 @@
     <ClInclude Include="Engine\Audio\Audio.h">
       <Filter>Engine\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Camera\Camera.h">
+      <Filter>Engine\Camera</Filter>
+    </ClInclude>
     <ClInclude Include="Engine\Camera\DebugCamera.h">
       <Filter>Engine\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Collision\FrustumCulling.h">
-      <Filter>Engine\Collision</Filter>
+    <ClInclude Include="Engine\Culling\FrustumCulling.h">
+      <Filter>Engine\Culling</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\DirectXCore.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Framework.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\ImGuiManager.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\WinApp.h">
@@ -230,13 +260,22 @@
     <ClInclude Include="Engine\Math\Vector4.h">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Object\Skydome.h">
-      <Filter>Engine\Object</Filter>
+    <ClInclude Include="Game\Object\Skydome.h">
+      <Filter>Game\Object</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Rendering\Material.h">
       <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Rendering\RenderResource.h">
+    <ClInclude Include="Engine\Rendering\ConstantBuffer.h">
+      <Filter>Engine\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Rendering\Mesh.h">
+      <Filter>Engine\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Rendering\Object3D.h">
+      <Filter>Engine\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Rendering\Sprite.h">
       <Filter>Engine\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Rendering\TransformData3D.h">
@@ -248,14 +287,17 @@
     <ClInclude Include="Engine\Rendering\VertexData.h">
       <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\ConvertString.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\String\ConvertString.h">
+      <Filter>Engine\String</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\CrashHandle.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\Diagnostics\CrashHandler.h">
+      <Filter>Engine\Diagnostics</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Utility\log.h">
-      <Filter>Engine\Utility</Filter>
+    <ClInclude Include="Engine\Diagnostics\Log.h">
+      <Filter>Engine\Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\MyGame.h">
+      <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Game\Scene\GameScene.h">
       <Filter>Game\Scene</Filter>

@@ -55,7 +55,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Collision;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -73,7 +73,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -83,7 +83,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Collision;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Geometry;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Rendering;$(ProjectDir)Engine\Utility;$(ProjectDir)Shaders;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,11 +96,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Audio\Audio.cpp" />
+    <ClCompile Include="Engine\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Camera\DebugCamera.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Engine\Collision\FrustumCulling.cpp" />
+    <ClCompile Include="Engine\Culling\FrustumCulling.cpp" />
     <ClCompile Include="Engine\Core\DirectXCore.cpp" />
+    <ClCompile Include="Engine\Core\Framework.cpp" />
+    <ClCompile Include="Engine\Core\ImGuiManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Geometry\GeometryGenerator.cpp" />
     <ClCompile Include="Engine\Geometry\LoadObjFile.cpp" />
@@ -110,11 +116,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
     <ClCompile Include="Engine\Input\Input.cpp" />
     <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
-    <ClCompile Include="Engine\Object\Skydome.cpp" />
-    <ClCompile Include="Engine\Rendering\RenderResource.cpp" />
-    <ClCompile Include="Engine\Utility\ConvertString.cpp" />
-    <ClCompile Include="Engine\Utility\CrashHandle.cpp" />
-    <ClCompile Include="Engine\Utility\Log.cpp" />
+    <ClCompile Include="Game\Object\Skydome.cpp" />
+    <ClCompile Include="Engine\Rendering\Mesh.cpp" />
+    <ClCompile Include="Engine\Rendering\Object3D.cpp" />
+    <ClCompile Include="Engine\Rendering\Sprite.cpp" />
+    <ClCompile Include="Engine\String\ConvertString.cpp" />
+    <ClCompile Include="Engine\Diagnostics\CrashHandler.cpp" />
+    <ClCompile Include="Engine\Diagnostics\Log.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -138,14 +146,18 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Game\MyGame.cpp" />
     <ClCompile Include="Game\Scene\GameScene.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Audio\Audio.h" />
+    <ClInclude Include="Engine\Camera\Camera.h" />
     <ClInclude Include="Engine\Camera\DebugCamera.h" />
-    <ClInclude Include="Engine\Collision\FrustumCulling.h" />
+    <ClInclude Include="Engine\Culling\FrustumCulling.h" />
     <ClInclude Include="Engine\Core\DirectXCore.h" />
+    <ClInclude Include="Engine\Core\Framework.h" />
+    <ClInclude Include="Engine\Core\ImGuiManager.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Geometry\GeometryGenerator.h" />
     <ClInclude Include="Engine\Geometry\LoadObjFile.h" />
@@ -160,15 +172,18 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Math\Vector2.h" />
     <ClInclude Include="Engine\Math\Vector3.h" />
     <ClInclude Include="Engine\Math\Vector4.h" />
-    <ClInclude Include="Engine\Object\Skydome.h" />
+    <ClInclude Include="Game\Object\Skydome.h" />
+    <ClInclude Include="Engine\Rendering\ConstantBuffer.h" />
     <ClInclude Include="Engine\Rendering\Material.h" />
-    <ClInclude Include="Engine\Rendering\RenderResource.h" />
+    <ClInclude Include="Engine\Rendering\Mesh.h" />
+    <ClInclude Include="Engine\Rendering\Object3D.h" />
+    <ClInclude Include="Engine\Rendering\Sprite.h" />
     <ClInclude Include="Engine\Rendering\TransformData3D.h" />
     <ClInclude Include="Engine\Rendering\TransformationMatrix.h" />
     <ClInclude Include="Engine\Rendering\VertexData.h" />
-    <ClInclude Include="Engine\Utility\ConvertString.h" />
-    <ClInclude Include="Engine\Utility\CrashHandle.h" />
-    <ClInclude Include="Engine\Utility\log.h" />
+    <ClInclude Include="Engine\String\ConvertString.h" />
+    <ClInclude Include="Engine\Diagnostics\CrashHandler.h" />
+    <ClInclude Include="Engine\Diagnostics\Log.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -182,6 +197,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="Game\MyGame.h" />
     <ClInclude Include="Game\Scene\GameScene.h" />
   </ItemGroup>
   <ItemGroup>

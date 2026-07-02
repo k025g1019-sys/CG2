@@ -1,5 +1,36 @@
-#include "DescriptorHeapManager.h"
+#include "Engine/Graphics/DescriptorHeapManager.h"
 #include <cassert>
+
+DescriptorHeapManager* DescriptorHeapManager::GetInstance() {
+    static DescriptorHeapManager instance;
+    return &instance;
+}
+
+void DescriptorHeapManager::Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap) {
+    assert(device != nullptr);
+    assert(srvHeap != nullptr);
+
+    srvHeap_ = srvHeap;
+    descriptorSize_ = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    capacity_ = srvHeap->GetDesc().NumDescriptors;
+    nextIndex_ = 0;
+}
+
+uint32_t DescriptorHeapManager::AllocateSrv() {
+    // ヒープが満杯なら割り当て失敗（capacityを増やすこと）
+    assert(nextIndex_ < capacity_);
+    return nextIndex_++;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetSrvCPUHandle(uint32_t index) const {
+    assert(srvHeap_ != nullptr);
+    return GetCPUDescriptorHandle(srvHeap_, descriptorSize_, index);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeapManager::GetSrvGPUHandle(uint32_t index) const {
+    assert(srvHeap_ != nullptr);
+    return GetGPUDescriptorHandle(srvHeap_, descriptorSize_, index);
+}
 
 ID3D12DescriptorHeap* DescriptorHeapManager::CreateDescriptorHeap(
     ID3D12Device* device,
@@ -17,7 +48,7 @@ ID3D12DescriptorHeap* DescriptorHeapManager::CreateDescriptorHeap(
         ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
         : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
+    [[maybe_unused]] HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
     assert(SUCCEEDED(hr));
 
     return descriptorHeap;

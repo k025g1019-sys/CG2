@@ -1,10 +1,10 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
-#include "LoadObjFile.h"
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Vector4.h"
+#include "Engine/Geometry/LoadObjFile.h"
+#include "Engine/Math/Vector2.h"
+#include "Engine/Math/Vector3.h"
+#include "Engine/Math/Vector4.h"
 
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename) {
 	MaterialData materialData; // 構築するMaterialData

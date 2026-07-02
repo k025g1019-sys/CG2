@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "VertexData.h"
+#include "Engine/Rendering/VertexData.h"
 struct MaterialData {
 	std::string textureFilePath;
 };

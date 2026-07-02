@@ -1,10 +1,10 @@
-#include "ShaderCompiler.h"
+#include "Engine/Graphics/ShaderCompiler.h"
 
 #include <cassert>
 #include <format>
 
-#include "Engine/Utility/ConvertString.h"
-#include "Engine/Utility/Log.h"
+#include "Engine/String/ConvertString.h"
+#include "Engine/Diagnostics/Log.h"
 #include <combaseapi.h>
 
 #pragma comment(lib, "dxcompiler.lib")

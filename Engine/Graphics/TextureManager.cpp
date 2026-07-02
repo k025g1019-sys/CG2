@@ -1,30 +1,75 @@
-#include "TextureManager.h"
+#include "Engine/Graphics/TextureManager.h"
 #include <cassert>
 #include <wrl.h>
-#include "ConvertString.h"
-#include "GpuResource.h"
+#include "Engine/String/ConvertString.h"
+#include "Engine/Graphics/GpuResource.h"
+#include "Engine/Graphics/DescriptorHeapManager.h"
 #include "externals/DirectXTex/d3dx12.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
-TextureData TextureManager::LoadAndUpload(
-    const std::string& filepath,
-    ID3D12Device* device,
-    ID3D12GraphicsCommandList* commandList) {
-    TextureData texture = LoadTexture(filepath);
-    texture.textureResource = CreateTextureResource(device, texture.metadata);
-    texture.intermediateResource = UploadTextureData(
-        texture.textureResource.Get(),
-        texture.mipImage,
-        device,
-        commandList);
-    return texture;
+TextureManager* TextureManager::GetInstance() {
+    static TextureManager instance;
+    return &instance;
 }
 
-TextureData TextureManager::LoadTexture(const std::string& filepath) {
-    TextureData data;
+void TextureManager::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList) {
+    assert(device != nullptr);
+    assert(commandList != nullptr);
 
+    device_ = device;
+    commandList_ = commandList;
+}
+
+uint32_t TextureManager::Load(const std::string& filepath) {
+    assert(device_ != nullptr && "TextureManager::Initializeが呼ばれていない");
+
+    // 読み込み済みならキャッシュから返す
+    for (uint32_t i = 0; i < textures_.size(); ++i) {
+        if (textures_[i].filepath == filepath) {
+            return i;
+        }
+    }
+
+    // 読み込み → リソース作成 → 転送コマンド発行
+    Texture texture;
+    texture.filepath = filepath;
+
+    ScratchImage mipImages = LoadTextureImage(filepath);
+    texture.metadata = mipImages.GetMetadata();
+    texture.resource = CreateTextureResource(device_, texture.metadata);
+    texture.intermediate = UploadTextureData(texture.resource.Get(), mipImages, device_, commandList_);
+
+    // SRVスロットを確保して作成する
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+    srvDesc.Format = texture.metadata.format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = UINT(texture.metadata.mipLevels);
+
+    DescriptorHeapManager* heapManager = DescriptorHeapManager::GetInstance();
+    uint32_t srvIndex = heapManager->AllocateSrv();
+    device_->CreateShaderResourceView(
+        texture.resource.Get(), &srvDesc, heapManager->GetSrvCPUHandle(srvIndex));
+    texture.srvHandleGPU = heapManager->GetSrvGPUHandle(srvIndex);
+
+    textures_.push_back(std::move(texture));
+    return uint32_t(textures_.size() - 1);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(uint32_t textureHandle) const {
+    assert(textureHandle < textures_.size());
+    return textures_[textureHandle].srvHandleGPU;
+}
+
+void TextureManager::Finalize() {
+    textures_.clear();
+    device_ = nullptr;
+    commandList_ = nullptr;
+}
+
+ScratchImage TextureManager::LoadTextureImage(const std::string& filepath) {
     std::wstring filePathW = ConvertString(filepath);
 
     ScratchImage image;
@@ -35,17 +80,17 @@ TextureData TextureManager::LoadTexture(const std::string& filepath) {
         image);
     assert(SUCCEEDED(hr));
 
+    ScratchImage mipImages;
     hr = GenerateMipMaps(
         image.GetImages(),
         image.GetImageCount(),
         image.GetMetadata(),
         TEX_FILTER_SRGB,
         0,
-        data.mipImage);
+        mipImages);
     assert(SUCCEEDED(hr));
 
-    data.metadata = data.mipImage.GetMetadata();
-    return data;
+    return mipImages;
 }
 
 ComPtr<ID3D12Resource> TextureManager::CreateTextureResource(
@@ -65,7 +110,7 @@ ComPtr<ID3D12Resource> TextureManager::CreateTextureResource(
 
     ComPtr<ID3D12Resource> resource;
 
-    HRESULT hr = device->CreateCommittedResource(
+    [[maybe_unused]] HRESULT hr = device->CreateCommittedResource(
         &heap,
         D3D12_HEAP_FLAG_NONE,
         &desc,

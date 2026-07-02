@@ -1,4 +1,4 @@
-#include "Matrix4x4.h"
+#include "Engine/Math/Matrix4x4.h"
 #include <algorithm>
 #include <assert.h>
 #include <cmath>
@@ -37,6 +37,23 @@ Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 	}
 	return result;
 };
+
+Matrix4x4 Matrix4x4::operator+(const Matrix4x4& rhs) const {
+	return Add(*this, rhs);
+}
+
+Matrix4x4 Matrix4x4::operator-(const Matrix4x4& rhs) const {
+	return Subtract(*this, rhs);
+}
+
+Matrix4x4 Matrix4x4::operator*(const Matrix4x4& rhs) const {
+	return Multiply(*this, rhs);
+}
+
+Matrix4x4& Matrix4x4::operator*=(const Matrix4x4& rhs) {
+	*this = Multiply(*this, rhs);
+	return *this;
+}
 
 // 逆行列
 Matrix4x4 Inverse(const Matrix4x4& m) {
